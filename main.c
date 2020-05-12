@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <errno.h>
@@ -60,6 +61,15 @@ int main(int argc, char ** argv) {
     }
     for (Map_e map = MAP_0X; map <= MAP_22; map += 1) {
         printf("%d %p\n", map, get_map_p(map));
+    }
+    char line[256] = {0};
+    uint8_t skip_header_lines = 1;
+    while (fgets(line, 256, input_file) != NULL) {
+        if (skip_header_lines) {
+            skip_header_lines -= 1;
+        } else {
+            // TODO
+        }
     }
     fclose(input_file);
     fclose(output_file);
