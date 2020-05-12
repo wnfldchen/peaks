@@ -31,4 +31,5 @@ typedef enum {
     MAP_22
 } Map_e;
 Map const * get_map_p(Map_e map);
+double get_gen_map_dist(Map const * map, uint32_t a, uint32_t b);
 #endif //GREEDYSNPS_MAPS_H
