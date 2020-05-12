@@ -61,5 +61,7 @@ int main(int argc, char ** argv) {
     for (Map_e map = MAP_0X; map <= MAP_22; map += 1) {
         printf("%d %p\n", map, get_map_p(map));
     }
+    fclose(input_file);
+    fclose(output_file);
     return 0;
 }
