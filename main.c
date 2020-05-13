@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <errno.h>
@@ -61,10 +60,6 @@ int main(int argc, char ** argv) {
         fputs("Error opening output file\n", stderr);
         return EBADF;
     }
-    puts("Checking maps");
-    for (Map_e map = MAP_0X; map <= MAP_22; map += 1) {
-        printf("%d %p\n", map, get_map_p(map));
-    }
     char line[256] = {0};
     uint8_t skip_header_lines = 1;
     while (fgets(line, 256, input_file) != NULL) {
@@ -98,7 +93,21 @@ int main(int argc, char ** argv) {
         }
     }
     make_heaps();
-    // TODO
+    for (uint8_t chr = 0; chr < 23; chr += 1) {
+        Map const * const map = get_map_p(chr);
+        Heap * const heap = &heaps[chr];
+        while (heap->n > 0) {
+            Association const lead = extract_heap(heap);
+            // TODO: Print lead association
+            for (uint16_t i = 0; i < heap->n; i += 1) {
+                if (get_gen_map_dist(map, lead.pos_u, heap->array[i].pos_u) < 0.25) {
+                    Association const non_lead = heap->array[i];
+                    delete_heap(heap, i);
+                    // TODO: Print non-lead association
+                }
+            }
+        }
+    }
     fclose(input_file);
     fclose(output_file);
     return 0;
