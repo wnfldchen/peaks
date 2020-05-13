@@ -98,14 +98,30 @@ int main(int argc, char ** argv) {
         Heap * const heap = &heaps[chr];
         while (heap->n > 0) {
             Association const lead = extract_heap(heap);
-            // TODO: Print lead association
+            uint16_t nominal_sum = lead.nominal_hhu;
+            fprintf(output_file,
+                    "%.255s %.5s %lf %.2s %u",
+                    lead.rsid_255s,
+                    lead.pheno_5c,
+                    lead.p_lf,
+                    lead.chr_2c,
+                    lead.pos_u);
+            char non_leads[4194304] = {0}; // 4194304 = 256 (one line) * 16384 (hits)
+            uint32_t cursor = 0;
             for (uint16_t i = 0; i < heap->n; i += 1) {
                 if (get_gen_map_dist(map, lead.pos_u, heap->array[i].pos_u) < 0.25) {
                     Association const non_lead = heap->array[i];
                     delete_heap(heap, i);
-                    // TODO: Print non-lead association
+                    nominal_sum += non_lead.nominal_hhu;
+                    cursor += sprintf(&non_leads[cursor],
+                                      " %.255s %.5s",
+                                      non_lead.rsid_255s,
+                                      non_lead.pheno_5c);
                 }
             }
+            fprintf(output_file, " %hu", nominal_sum);
+            fputs(non_leads, output_file);
+            fputc('\n', output_file);
         }
     }
     fclose(input_file);
