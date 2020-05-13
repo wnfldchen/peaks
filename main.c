@@ -83,6 +83,7 @@ int main(int argc, char ** argv) {
                    &association.se_repro_lf,
                    &association.nominal_hhu);
             if (association.chr_2c[0] == 'X') {
+                association.chr_2c[1] = '\0';
                 association.chr_2hhu = 0;
             } else {
                 sscanf(association.chr_2c,
