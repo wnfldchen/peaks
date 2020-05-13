@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <errno.h>
 #include "map/maps.h"
+#include "heap/heap.h"
 int main(int argc, char ** argv) {
     enum {
         INPUT_FILE = 0x1,
@@ -59,6 +61,7 @@ int main(int argc, char ** argv) {
         fputs("Error opening output file\n", stderr);
         return EBADF;
     }
+    puts("Checking maps");
     for (Map_e map = MAP_0X; map <= MAP_22; map += 1) {
         printf("%d %p\n", map, get_map_p(map));
     }
@@ -68,7 +71,30 @@ int main(int argc, char ** argv) {
         if (skip_header_lines) {
             skip_header_lines -= 1;
         } else {
-            // TODO
+            Association association = {0};
+            sscanf(line,
+                   "%255s %5c %2c %u %255s %255s %lf %lf %lf %lf %lf %lf %hhu",
+                   association.rsid_255s,
+                   association.pheno_5c,
+                   association.chr_2c,
+                   &association.pos_u,
+                   association.a1_255s,
+                   association.a2_255s,
+                   &association.p_lf,
+                   &association.beta_lf,
+                   &association.se_lf,
+                   &association.p_repro_lf,
+                   &association.beta_repro_lf,
+                   &association.se_repro_lf,
+                   &association.nominal_hhu);
+            if (association.chr_2c[0] == 'X') {
+                association.chr_2hhu = 0;
+            } else {
+                sscanf(association.chr_2c,
+                       "%2hhu",
+                       &association.chr_2hhu);
+            }
+            emplace_array(association);
         }
     }
     fclose(input_file);
