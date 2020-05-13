@@ -97,6 +97,8 @@ int main(int argc, char ** argv) {
             emplace_array(association);
         }
     }
+    make_heaps();
+    // TODO
     fclose(input_file);
     fclose(output_file);
     return 0;

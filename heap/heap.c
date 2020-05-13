@@ -9,3 +9,7 @@ void emplace_array(Association association) {
     heap->array[heap->n] = association;
     heap->n += 1;
 }
+
+void make_heaps() {
+    // TODO
+}

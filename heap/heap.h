@@ -27,4 +27,5 @@ typedef struct {
 } Heap;
 extern Heap heaps[23];
 void emplace_array(Association association);
+void make_heaps();
 #endif //GREEDYSNPS_HEAP_H
