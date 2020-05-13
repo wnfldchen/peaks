@@ -11,7 +11,7 @@ void emplace_array(Association const association) {
     heap->n += 1;
 }
 
-void max_heapify(Heap * const heap, uint8_t const i) {
+void max_heapify(Heap * const heap, uint16_t const i) {
     uint16_t const n = heap->n;
     uint16_t const l = 2 * i + 1;
     uint16_t const r = 2 * i + 2;
@@ -45,5 +45,37 @@ void heapify(uint8_t const chr) {
 void make_heaps() {
     for (uint8_t chr = 0; chr < 23; chr += 1) {
         heapify(chr);
+    }
+}
+
+void filter_heap(Heap * const heap, uint16_t const i) {
+    uint16_t p = (i - 1) / 2;
+    if (i > 0 &&
+        heap->array[i].p_lf > heap->array[p].p_lf) {
+        Association temp = heap->array[p];
+        heap->array[p] = heap->array[i];
+        heap->array[i] = temp;
+        filter_heap(heap, p);
+    }
+}
+
+Association extract_heap(Heap * const heap) {
+    Association root = heap->array[0];
+    delete_heap(heap, 0);
+    return root;
+}
+
+void delete_heap(Heap * const heap, uint16_t const i) {
+    heap->n -= 1;
+    if (i < heap->n) {
+        heap->array[i] = heap->array[heap->n];
+        if (heap->n > 1) {
+            if (i == 0 ||
+                heap->array[i].p_lf < heap->array[(i - 1) / 2].p_lf) {
+                max_heapify(heap, i);
+            } else {
+                filter_heap(heap, i);
+            }
+        }
     }
 }
