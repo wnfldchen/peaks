@@ -28,4 +28,6 @@ typedef struct {
 extern Heap heaps[23];
 void emplace_array(Association association);
 void make_heaps();
+Association extract_heap(Heap * heap);
+void delete_heap(Heap * heap, uint8_t i);
 #endif //GREEDYSNPS_HEAP_H

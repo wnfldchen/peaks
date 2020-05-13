@@ -116,5 +116,11 @@ double get_gen_map_cm(Map const * const map, uint32_t const pos) {
 }
 
 double get_gen_map_dist(Map const * const map, uint32_t const a, uint32_t const b) {
-    return get_gen_map_cm(map, b) - get_gen_map_cm(map, a);
+    if (b > a) {
+        return get_gen_map_cm(map, b) - get_gen_map_cm(map, a);
+    } else if (b < a) {
+        return get_gen_map_cm(map, a) - get_gen_map_cm(map, b);
+    } else {
+        return 0.0;
+    }
 }
