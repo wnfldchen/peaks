@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <errno.h>
@@ -9,7 +10,8 @@
 int main(int argc, char ** argv) {
     enum {
         INPUT_FILE = 0x1,
-        OUTPUT_FILE = 0x10
+        OUTPUT_FILE = 0x10,
+        CHROMOSOME = 0x100
     };
     struct option const options[] = {
         {
@@ -24,10 +26,17 @@ int main(int argc, char ** argv) {
             .flag = NULL,
             .val = OUTPUT_FILE
         },
+        {
+            .name = "chromosome",
+            .has_arg = required_argument,
+            .flag = NULL,
+            .val = CHROMOSOME
+        },
         {0}
     };
     FILE * input_file = NULL;
     FILE * output_file = NULL;
+    uint8_t chromosome = (uint8_t) (-1);
     int opt_code;
     do {
         opt_code = getopt_long(argc, argv, "", options, NULL);
@@ -38,6 +47,19 @@ int main(int argc, char ** argv) {
             case OUTPUT_FILE:
                 output_file = fopen(optarg, "w");
                 break;
+            case CHROMOSOME: {
+                char chromosome_opt[2] = {0};
+                strncpy(chromosome_opt, optarg, 2);
+                if (chromosome_opt[0] == 'X') {
+                    chromosome_opt[1] = '\0';
+                    chromosome = 0;
+                } else {
+                    sscanf(chromosome_opt,
+                           "%2hhu",
+                           &chromosome);
+                }
+                break;
+            }
             default:
                 break;
         }
@@ -59,6 +81,10 @@ int main(int argc, char ** argv) {
     if (output_file == NULL) {
         fputs("Error opening output file\n", stderr);
         return EBADF;
+    }
+    if (chromosome != (uint8_t) (-1) && chromosome > 22) {
+        fputs("Invalid chromosome\n", stderr);
+        return EINVAL;
     }
     char line[256] = {0};
     uint8_t skip_header_lines = 1;
@@ -90,7 +116,9 @@ int main(int argc, char ** argv) {
                        "%2hhu",
                        &association.chr_2hhu);
             }
-            emplace_array(association);
+            if (chromosome == (uint8_t) (-1) || association.chr_2hhu == chromosome) {
+                emplace_array(association);
+            }
         }
     }
     make_heaps();
