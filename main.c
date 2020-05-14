@@ -94,6 +94,7 @@ int main(int argc, char ** argv) {
         }
     }
     make_heaps();
+    fputs("lead_rsid lead_pheno lead_p-value lead_chr lead_pos cluster_nominal cluster_rsids_phenos\n", output_file);
     for (uint8_t chr = 0; chr < 23; chr += 1) {
         Map const * const map = get_map_p(chr);
         Heap * const heap = &heaps[chr];
