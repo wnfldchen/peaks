@@ -29,5 +29,5 @@ extern Heap heaps[23];
 void emplace_array(Association association);
 void make_heaps();
 Association extract_heap(Heap * heap);
-void delete_heap(Heap * heap, uint16_t i);
+void batch_delete_heap(Heap * heap, uint8_t * delete);
 #endif //GREEDYSNPS_HEAP_H

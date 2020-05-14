@@ -150,11 +150,7 @@ int main(int argc, char ** argv) {
                                       non_lead.pheno_5c);
                 }
             }
-            for (uint16_t i = 0; i < heap->n; i += 1) {
-                if (cluster_flag[i]) {
-                    delete_heap(heap, i);
-                }
-            }
+            batch_delete_heap(heap, cluster_flag);
             fprintf(output_file, " %hu", nominal_sum);
             fputs(non_leads, output_file);
             fputc('\n', output_file);

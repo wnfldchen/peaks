@@ -59,12 +59,6 @@ void filter_heap(Heap * const heap, uint16_t const i) {
     }
 }
 
-Association extract_heap(Heap * const heap) {
-    Association root = heap->array[0];
-    delete_heap(heap, 0);
-    return root;
-}
-
 void delete_heap(Heap * const heap, uint16_t const i) {
     heap->n -= 1;
     if (i < heap->n) {
@@ -76,6 +70,31 @@ void delete_heap(Heap * const heap, uint16_t const i) {
             } else {
                 filter_heap(heap, i);
             }
+        }
+    }
+}
+
+Association extract_heap(Heap * const heap) {
+    Association root = heap->array[0];
+    delete_heap(heap, 0);
+    return root;
+}
+
+void batch_delete_heap(Heap * const heap, uint8_t * const delete) {
+    for (uint16_t i = 0; i < heap->n; i += 1) {
+        if (delete[i]) {
+            heap->n -= 1;
+            if (i < heap->n) {
+                heap->array[i] = heap->array[heap->n];
+                delete[i] = delete[heap->n];
+                i -= 1;
+            }
+        }
+    }
+    uint16_t const n = heap->n;
+    if (n > 1) {
+        for (uint16_t i = (n - 2) / 2; i != (uint16_t) (-1); i -= 1) {
+            max_heapify(heap, i);
         }
     }
 }
