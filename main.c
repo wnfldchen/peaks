@@ -138,15 +138,21 @@ int main(int argc, char ** argv) {
                     lead.pos_u);
             char non_leads[4194304] = {0}; // 4194304 = 256 (one line) * 16384 (hits)
             uint32_t cursor = 0;
+            uint8_t cluster_flag[16384] = {0};
             for (uint16_t i = 0; i < heap->n; i += 1) {
                 if (get_gen_map_dist(map, lead.pos_u, heap->array[i].pos_u) < 0.25) {
+                    cluster_flag[i] = 1;
                     Association const non_lead = heap->array[i];
-                    delete_heap(heap, i);
                     nominal_sum += non_lead.nominal_hhu;
                     cursor += sprintf(&non_leads[cursor],
                                       " %.255s %.5s",
                                       non_lead.rsid_255s,
                                       non_lead.pheno_5c);
+                }
+            }
+            for (uint16_t i = 0; i < heap->n; i += 1) {
+                if (cluster_flag[i]) {
+                    delete_heap(heap, i);
                 }
             }
             fprintf(output_file, " %hu", nominal_sum);
