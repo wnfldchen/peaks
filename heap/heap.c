@@ -80,15 +80,16 @@ Association extract_heap(Heap * const heap) {
     return root;
 }
 
-void batch_delete_heap(Heap * const heap, uint8_t * const delete) {
+void batch_delete_heap(Heap * const heap, uint8_t const * const delete) {
     for (uint16_t i = 0; i < heap->n; i += 1) {
         if (delete[i]) {
-            heap->n -= 1;
-            if (i < heap->n) {
-                heap->array[i] = heap->array[heap->n];
-                delete[i] = delete[heap->n];
-                i -= 1;
+            while (i < heap->n - 1 && delete[heap->n - 1]) {
+                heap->n -= 1;
             }
+            if (i < heap->n - 1) {
+                heap->array[i] = heap->array[heap->n - 1];
+            }
+            heap->n -= 1;
         }
     }
     uint16_t const n = heap->n;
