@@ -1,17 +1,13 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <errno.h>
 #include "map/maps.h"
 #include "heap/heap.h"
-double maf(FILE * variants_file, Association association) {
-    // TODO
-    return 0.5;
-}
-
 int main(int argc, char ** argv) {
     enum {
         INPUT_FILE,
@@ -75,137 +71,278 @@ int main(int argc, char ** argv) {
     double min_p = 0.0;
     double min_maf = 0.0;
     int opt_code;
+    int errsv;
     do {
         opt_code = getopt_long(argc, argv, "", options, NULL);
         switch (opt_code) {
             case INPUT_FILE:
                 input_file = fopen(optarg, "r");
+                if (!input_file) {
+                    errsv = errno;
+                    perror("--input-file");
+                    return errsv;
+                }
                 break;
             case OUTPUT_FILE:
                 output_file = fopen(optarg, "w");
-                break;
-            case CHROMOSOME: {
-                char chromosome_opt[2] = {0};
-                strncpy(chromosome_opt, optarg, 2);
-                if (chromosome_opt[0] == 'X') {
-                    chromosome_opt[1] = '\0';
-                    chromosome = 0;
-                } else {
-                    sscanf(chromosome_opt,
-                           "%2hhu",
-                           &chromosome);
+                if (!output_file) {
+                    errsv = errno;
+                    perror("--output-file");
+                    return errsv;
                 }
                 break;
-            }
+            case CHROMOSOME:
+                if (optarg[0] == 'X') {
+                    chromosome = 0;
+                } else if (sscanf(optarg,
+                                  "%2hhu",
+                                  &chromosome) != 1) {
+                    errsv = errno;
+                    perror("--chromosome");
+                    return errsv;
+                }
+                break;
             case MIN_P:
-                sscanf(optarg, "%lf", &min_p);
+                if (sscanf(optarg, "%lf", &min_p) != 1) {
+                    errsv = errno;
+                    perror("--min-p");
+                    return errsv;
+                }
                 break;
             case MIN_MAF:
-                sscanf(optarg, "%lf", &min_maf);
+                if (sscanf(optarg, "%lf", &min_maf) != 1) {
+                    errsv = errno;
+                    perror("--min-maf");
+                    return errsv;
+                }
                 break;
             case VARIANTS_FILE:
                 variants_file = fopen(optarg, "r");
-                if (variants_file == NULL) {
-                    fputs("Error opening variants file\n", stderr);
-                    opt_code = '?';
+                if (!variants_file) {
+                    errsv = errno;
+                    perror("--variants-file");
+                    return errsv;
                 }
+                break;
             case TABLE_1:
                 table_1_mode = 1;
                 break;
-            default:
-                break;
-        }
-        if (opt_code == '?') {
-            if (input_file != NULL) {
-                fclose(input_file);
-            }
-            if (output_file != NULL) {
-                fclose(output_file);
-            }
-            if (variants_file != NULL) {
-                fclose(variants_file);
-            }
-            fputs("Error parsing arguments\n", stderr);
-            return EINVAL;
+            case '?':
+                fputs("Error parsing arguments\n", stderr);
+                return EINVAL;
         }
     } while (opt_code != -1);
-    uint8_t threshold_maf = min_maf > 0.0;
-    uint8_t threshold_p = min_p > 0.0;
-    if (input_file == NULL) {
-        fputs("No such input file\n", stderr);
-        return ENOENT;
+    uint8_t const filter_chromosome = chromosome != (uint8_t) (-1);
+    uint8_t const threshold_maf = min_maf > 0.0;
+    uint8_t const threshold_p = min_p > 0.0;
+    uint8_t const require_variants = threshold_maf || table_1_mode;
+    if (!input_file) {
+        fputs("No --input-file\n", stderr);
+        return EINVAL;
     }
-    if (output_file == NULL) {
-        fputs("Error opening output file\n", stderr);
-        return EBADF;
+    if (!output_file) {
+        fputs("No --output-file\n", stderr);
+        return EINVAL;
     }
-    if (chromosome != (uint8_t) (-1) && chromosome > 22) {
-        fputs("Invalid chromosome\n", stderr);
+    if (filter_chromosome && chromosome > 22) {
+        fputs("Invalid --chromosome\n", stderr);
         return EINVAL;
     }
     if (min_maf < 0.0 || min_maf > 0.5) {
-        fputs("Invalid MAF threshold\n", stderr);
+        fputs("Invalid --min-maf\n", stderr);
         return EINVAL;
     }
-    if (threshold_maf && variants_file == NULL) {
-        fputs("MAF threshold requires variants file\n", stderr);
+    if (threshold_maf && !variants_file) {
+        fputs("--min-maf requires --variants-file\n", stderr);
         return EINVAL;
     }
-    if (table_1_mode && variants_file == NULL) {
-        fputs("Table 1 mode requires variants file\n", stderr);
+    if (table_1_mode && !variants_file) {
+        fputs("--table-1 requires --variants-file\n", stderr);
         return EINVAL;
     }
     if (min_p < 0.0) {
-        fputs("-log(p) threshold less than 0\n", stderr);
+        fputs("Invalid --min-p\n", stderr);
         return EINVAL;
     }
-    char line[256] = {0};
+    char * line = NULL;
+    size_t n = 0;
     uint8_t skip_header_lines = 1;
-    while (fgets(line, 256, input_file) != NULL) {
+    uint32_t heap_sizes[23] = {0};
+    uint32_t variants_sizes[23] = {0};
+    while (getline(&line, &n, input_file) != -1) {
+        char chr[2] = {0};
+        uint8_t i;
         if (skip_header_lines) {
             skip_header_lines -= 1;
+        } else if (table_1_mode &&
+                   sscanf(line, "%2c", chr) != 1) {
+            fputs("Invalid input chr\n", stderr);
+        } else if (!table_1_mode &&
+                   sscanf(line, "%*s %*s %2c", chr) != 1) {
+            fputs("Invalid input chr\n", stderr);
+        } else if (chr[0] == 'X' || chr[1] == 'X') {
+            heap_sizes[0] += 1;
+        } else if (sscanf(chr, "%2hhu", &i) != 1 ||
+                   i < 1 || i > 22) {
+            fputs("Invalid input chr\n", stderr);
         } else {
-            Association association = {0};
+            heap_sizes[i] += 1;
+        }
+    }
+    skip_header_lines = 1;
+    while (require_variants &&
+           getline(&line, &n, variants_file) != -1) {
+        uint8_t i;
+        if (skip_header_lines) {
+            skip_header_lines -= 1;
+        } else if (line[0] == 'X' || line[1] == 'X') {
+            variants_sizes[0] += 1;
+        } else if (sscanf(line, "%2hhu", &i) != 1 ||
+                   i < 1 || i > 22) {
+            fputs("Invalid variant chr\n", stderr);
+        } else {
+            variants_sizes[i] += 1;
+        }
+    }
+    struct Node * variants[23] = {0};
+    for (uint8_t i = 0; i < 23; i += 1) {
+        heaps[i].array = calloc(heap_sizes[i], sizeof(struct Node));
+        if (!heaps[i].array) {
+            errsv = errno;
+            perror("heaps");
+            return errsv;
+        }
+        variants[i] = calloc(variants_sizes[i], sizeof(struct Node));
+        if (!variants[i]) {
+            errsv = errno;
+            perror("variants");
+            return errsv;
+        }
+    }
+    rewind(variants_file);
+    skip_header_lines = 1;
+    uint32_t variants_n[23] = {0}
+    while (require_variants &&
+           getline(&line, &n, variants_file) != -1) {
+        struct Node node = {0};
+        if (skip_header_lines) {
+            skip_header_lines -= 1;
+        } else if (sscanf(line,
+                          "%2c %ms %u %ms %ms %lf",
+                          node.chr,
+                          &node.rsid,
+                          &node.pos,
+                          &node.a1,
+                          &node.a2,
+                          &node.af) != 6) {
+            fputs("Invalid variant line\n", stderr);
+            free(node.rsid);
+            free(node.a1);
+            free(node.a2);
+        } else {
+            if (node.chr[0] == 'X' || node.chr[1] == 'X') {
+                node.chr_id = 0;
+            } else if (sscanf(node.chr, "%2hhu", &node.chr_id) != 1 ||
+                       node.chr_id < 1 || node.chr_id > 22) {
+                fputs("Invalid variant chr\n", stderr);
+                free(node.rsid);
+                free(node.a1);
+                free(node.a2);
+                continue;
+            }
+            variants[node.chr_id][variants_n[node.chr_id]] = node;
+            variants_n[node.chr_id] += 1;
+        }
+    }
+    for (uint8_t i = 0; i < 23; i += 1) {
+        if (variants_size[i] != variants_n[i]) {
+            fputs("variants_size != variants_n\n", stderr);
+        }
+    }
+    rewind(input_file);
+    skip_header_lines = 1;
+    while (getline(&line, &n, input_file) != -1) {
+        struct Node node = {0};
+        if (skip_header_lines) {
+            skip_header_lines -= 1;
+        } else if (table_1_mode &&
+                   sscanf(line,
+                          "%2c %ms %u %ms %ms %*s %*s %lf",
+                          node.chr,
+                          &node.rsid,
+                          &node.pos,
+                          &node.a1,
+                          &node.a2,
+                          &node.p) != 6) {
+            fputs("Invalid input line\n", stderr);
+            free(node.rsid);
+            free(node.a1);
+            free(node.a2);
+        } else if (!table_1_mode &&
+                   sscanf(line,
+                          "%ms %5c %2c %u %ms %ms %lf %*s %*s %*s %*s %*s %hhu",
+                          &node.rsid,
+                          node.pheno,
+                          node.chr,
+                          &node.pos,
+                          &node.a1,
+                          &node.a2,
+                          &node.p,
+                          &node.nom) != 8) {
+            fputs("Invalid input line\n", stderr);
+            free(node.rsid);
+            free(node.a1);
+            free(node.a2);
+        } else {
+            if (node.chr[1] == 'X') {
+                node.chr_id = 0;
+            } else if (node.chr[0] == 'X') {
+                node.chr[1] = '\0';
+                node.chr_id = 0;
+            } else if (sscanf(node.chr, "%2hhu", &node.chr_id) != 1 ||
+                       node.chr_id < 1 || node.chr_id > 22) {
+                fputs("Invalid input chr\n", stderr);
+                free(node.rsid);
+                free(node.a1);
+                free(node.a2);
+                continue;
+            }
+            if (require_variants) {
+                struct Node * const vars = variants[node.chr_id];
+                uint32_t const n = variants_n[node.chr_id];
+                uint32_t l = 0;
+                uint32_t r = n;
+                while (l < r) {
+                    uint32_t const m = (l + r) / 2;
+                    uint32_t const m_pos = vars[m].pos;
+                    if (m_pos < node.pos) {
+                        l = m + 1;
+                    } else {
+                        r = m;
+                    }
+                }
+                while (l < n && vars[l].pos == node.pos &&
+                       (strcmp(vars[l].rsid, node.rsid) ||
+                        strcmp(vars[l].a1, node.a1) ||
+                        strcmp(vars[l].a2, node.a2))) {
+                    l += 1;
+                }
+                if (l >= n || vars[l].pos != node.pos) {
+                    fputs("Variant not found\n", stderr);
+                    free(node.rsid);
+                    free(node.a1);
+                    free(node.a2);
+                    continue;
+                }
+                node.af = vars[l].af;
+            }
             if (table_1_mode) {
-                sscanf(line,
-                       "%2c %255s %u %255s %255s %lf %lf %lf",
-                       association.chr_2c,
-                       association.rsid_255s,
-                       &association.pos_u,
-                       association.a1_255s,
-                       association.a2_255s,
-                       &association.beta_lf,
-                       &association.se_lf,
-                       &association.p_lf);
-            } else {
-                sscanf(line,
-                       "%255s %5c %2c %u %255s %255s %lf %lf %lf %lf %lf %lf %hhu",
-                       association.rsid_255s,
-                       association.pheno_5c,
-                       association.chr_2c,
-                       &association.pos_u,
-                       association.a1_255s,
-                       association.a2_255s,
-                       &association.p_lf,
-                       &association.beta_lf,
-                       &association.se_lf,
-                       &association.p_repro_lf,
-                       &association.beta_repro_lf,
-                       &association.se_repro_lf,
-                       &association.nominal_hhu);
+                node.gd = get_gen_map_cm(get_map_p(node.chr_id), node.pos);
             }
-            if (association.chr_2c[0] == 'X') {
-                association.chr_2c[1] = '\0';
-                association.chr_2hhu = 0;
-            } else {
-                sscanf(association.chr_2c,
-                       "%2hhu",
-                       &association.chr_2hhu);
-            }
-            if ((!threshold_p || association.p_lf > min_p) &&
-                (!threshold_maf || maf(variants_file, association) > min_maf) &&
-                (chromosome == (uint8_t) (-1) || association.chr_2hhu == chromosome)) {
-                emplace_array(association);
+            if ((!threshold_p || node.p > min_p) &&
+                (!threshold_maf || (node.af > min_maf && node.af < 1.0 - min_maf)) &&
+                (chromosome == (uint8_t) (-1) || node.chr_id == chromosome)) {
+                emplace_array(node);
             }
         }
     }
@@ -216,58 +353,84 @@ int main(int argc, char ** argv) {
         fputs("lead_rsid lead_pheno lead_p-value lead_chr lead_pos cluster_nominal cluster_rsids_phenos\n", output_file);
     }
     for (uint8_t chr = 0; chr < 23; chr += 1) {
-        Map const * const map = get_map_p(chr);
-        Heap * const heap = &heaps[chr];
+        struct Map const * const map = get_map_p(chr);
+        struct Heap * const heap = &heaps[chr];
+        struct Node * non_leads = NULL;
+        if (!table_1_mode) {
+            non_leads = calloc(heap_sizes[chr], sizeof(struct Node));
+            if (!non_leads) {
+                fputs("Allocation of non_leads failed\n", stderr);
+                continue;
+            }
+        }
         while (heap->n > 0) {
-            Association const lead = extract_heap(heap);
+            struct Node const lead = extract_heap(heap);
             if (table_1_mode) {
                 fprintf(output_file,
-                        "%.2s %.255s %u %lf %.255s %.255s %lf %lf",
-                        lead.chr_2c,
-                        lead.rsid_255s,
-                        lead.pos_u,
-                        get_gen_map_cm(map, lead.pos_u),
-                        lead.a1_255s,
-                        lead.a2_255s,
-                        maf(variants_file, lead),
-                        lead.p_lf);
+                        "%.2s %s %u %lf %s %s %lf %lf",
+                        lead.chr,
+                        lead.rsid,
+                        lead.pos,
+                        lead.gd,
+                        lead.a1,
+                        lead.a2,
+                        lead.af < 0.5 ? lead.af : 1.0 - lead.af,
+                        lead.p);
             } else {
                 fprintf(output_file,
-                        "%.255s %.5s %lf %.2s %u",
-                        lead.rsid_255s,
-                        lead.pheno_5c,
-                        lead.p_lf,
-                        lead.chr_2c,
-                        lead.pos_u);
+                        "%s %.5s %lf %.2s %u",
+                        lead.rsid,
+                        lead.pheno,
+                        lead.p,
+                        lead.chr,
+                        lead.pos);
             }
-            uint16_t nominal_sum = lead.nominal_hhu;
-            char non_leads[4194304] = {0}; // 4194304 = 256 (one line) * 16384 (hits)
-            uint32_t cursor = 0;
-            uint8_t cluster_flag[16384] = {0};
-            for (uint16_t i = 0; i < heap->n; i += 1) {
-                if (get_gen_map_dist(map, lead.pos_u, heap->array[i].pos_u) < 0.25) {
-                    cluster_flag[i] = 1;
-                    if (!table_1_mode) {
-                        Association const non_lead = heap->array[i];
-                        nominal_sum += non_lead.nominal_hhu;
-                        cursor += sprintf(&non_leads[cursor],
-                                          " %.255s %.5s",
-                                          non_lead.rsid_255s,
-                                          non_lead.pheno_5c);
+            uint32_t nominal_sum = lead.nom;
+            uint32_t non_leads_n = 0;
+            for (uint32_t i = 0; i < heap->n; i += 1) {
+                if (get_gen_map_dist(map, lead.pos, heap->array[i].pos) < 0.25) {
+                    heap->array[i].flag = 1;
+                    if (table_1_mode) {
+                        free(heap->array[i].rsid);
+                        free(heap->array[i].a1);
+                        free(heap->array[i].a2);
+                    } else {
+                        nominal_sum += heap->array[i].nom;
+                        non_leads[non_leads_n] = heap->array[i];
+                        non_leads_n += 1;
                     }
                 }
             }
-            batch_delete_heap(heap, cluster_flag);
+            batch_delete_heap(heap);
             if (!table_1_mode) {
                 fprintf(output_file, " %hu", nominal_sum);
-                fputs(non_leads, output_file);
+            }
+            for (uint32_t i = 0; !table_1_mode && i < non_leads_n; i += 1) {
+                fprintf(output_file,
+                        " %s %.5s",
+                        non_leads[i].rsid,
+                        non_leads[i].pheno);
+                free(non_leads[i].rsid);
+                free(non_leads[i].a1);
+                free(non_leads[i].a2);
             }
             fputc('\n', output_file);
+            free(lead.rsid);
+            free(lead.a1);
+            free(lead.a2);
+        }
+        if (!table_1_mode) {
+            free(non_leads);
         }
     }
+    for (uint8_t i = 0; i < 23; i += 1) {
+        free(heaps[i].array);
+        free(variants[i]);
+    }
+    free(line);
     fclose(input_file);
     fclose(output_file);
-    if (variants_file != NULL) {
+    if (variants_file) {
         fclose(variants_file);
     }
     return 0;

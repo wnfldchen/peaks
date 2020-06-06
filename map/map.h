@@ -5,10 +5,10 @@
 #ifndef GREEDYSNPS_MAP_H
 #define GREEDYSNPS_MAP_H
 #include <stdint.h>
-typedef struct {
+struct Map {
     uint32_t const * const position;
     double const * const comb_rate;
     double const * const gen_map;
     uint32_t const n;
-} Map;
+};
 #endif //GREEDYSNPS_MAP_H

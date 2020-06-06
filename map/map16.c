@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include "map.h"
 #include "map16.h"
-Map const map16 = (Map const){
+struct Map const map16 = (struct Map const){
     .n = 90903,
     .position = (uint32_t const[])
 {

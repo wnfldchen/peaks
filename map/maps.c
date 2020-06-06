@@ -30,60 +30,18 @@
 #include "map22.h"
 #include "maps.h"
 
-Map const * get_map_p(Map_e const map) {
-    switch (map) {
-        case MAP_0X:
-            return &map0X;
-        case MAP_01:
-            return &map01;
-        case MAP_02:
-            return &map02;
-        case MAP_03:
-            return &map03;
-        case MAP_04:
-            return &map04;
-        case MAP_05:
-            return &map05;
-        case MAP_06:
-            return &map06;
-        case MAP_07:
-            return &map07;
-        case MAP_08:
-            return &map08;
-        case MAP_09:
-            return &map09;
-        case MAP_10:
-            return &map10;
-        case MAP_11:
-            return &map11;
-        case MAP_12:
-            return &map12;
-        case MAP_13:
-            return &map13;
-        case MAP_14:
-            return &map14;
-        case MAP_15:
-            return &map15;
-        case MAP_16:
-            return &map16;
-        case MAP_17:
-            return &map17;
-        case MAP_18:
-            return &map18;
-        case MAP_19:
-            return &map19;
-        case MAP_20:
-            return &map20;
-        case MAP_21:
-            return &map21;
-        case MAP_22:
-            return &map22;
-        default:
-            return NULL;
-    }
+struct Map const * get_map_p(uint8_t const i) {
+    static struct Map const * const maps[] = {
+        &map0X, &map01, &map02, &map03, &map04,
+        &map05, &map06, &map07, &map08, &map09,
+        &map10, &map11, &map12, &map13, &map14,
+        &map15, &map16, &map17, &map18, &map19,
+        &map20, &map21, &map22
+    };
+    return maps[i];
 }
 
-uint32_t binary_search(Map const * const map, uint32_t const pos) {
+uint32_t binary_search(struct Map const * const map, uint32_t const pos) {
     uint32_t l = 0;
     uint32_t r = map->n;
     while (l < r) {
@@ -98,7 +56,7 @@ uint32_t binary_search(Map const * const map, uint32_t const pos) {
     return r ? r - 1 : 0;
 }
 
-double get_gen_map_cm(Map const * const map, uint32_t const pos) {
+double get_gen_map_cm(struct Map const * const map, uint32_t const pos) {
     uint32_t r = binary_search(map, pos);
     uint32_t r_pos = map->position[r];
     double r_map = map->gen_map[r];
@@ -115,7 +73,7 @@ double get_gen_map_cm(Map const * const map, uint32_t const pos) {
     }
 }
 
-double get_gen_map_dist(Map const * const map, uint32_t const a, uint32_t const b) {
+double get_gen_map_dist(struct Map const * const map, uint32_t const a, uint32_t const b) {
     if (b > a) {
         return get_gen_map_cm(map, b) - get_gen_map_cm(map, a);
     } else if (b < a) {

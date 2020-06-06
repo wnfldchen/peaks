@@ -5,5 +5,5 @@
 #ifndef GREEDYSNPS_MAP16_H
 #define GREEDYSNPS_MAP16_H
 #include "map.h"
-extern Map const map16;
+extern struct Map const map16;
 #endif //GREEDYSNPS_MAP16_H
