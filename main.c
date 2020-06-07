@@ -335,6 +335,8 @@ int main(int argc, char ** argv) {
                 (!threshold_maf || (node.af > min_maf && node.af < 1.0 - min_maf)) &&
                 (chromosome == (uint8_t) (-1) || node.chr_id == chromosome)) {
                 emplace_array(node);
+            } else {
+                free_node(&node);
             }
         }
     }
