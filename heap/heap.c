@@ -63,7 +63,6 @@ void filter_heap(struct Heap * const heap, uint32_t const i) {
 void delete_heap(struct Heap * const heap, uint32_t const i) {
     heap->n -= 1;
     if (i < heap->n) {
-        free_node(&heap->array[i]);
         heap->array[i] = heap->array[heap->n];
         if (heap->n > 1) {
             if (i == 0 ||
@@ -86,10 +85,8 @@ void batch_delete_heap(struct Heap * const heap) {
     for (uint32_t i = 0; i < heap->n; i += 1) {
         if (heap->array[i].flag) {
             while (i < heap->n - 1 && heap->array[heap->n - 1].flag) {
-                free_node(&heap->array[heap->n - 1]);
                 heap->n -= 1;
             }
-            free_node(&heap->array[i]);
             if (i < heap->n - 1) {
                 heap->array[i] = heap->array[heap->n - 1];
             }
@@ -104,7 +101,7 @@ void batch_delete_heap(struct Heap * const heap) {
     }
 }
 
-void free_node(struct Node * const node) {
+void free_node(struct Node const * const node) {
     free(node->rsid);
     free(node->a1);
     free(node->a2);

@@ -212,16 +212,20 @@ int main(int argc, char ** argv) {
             perror("heaps");
             return errsv;
         }
-        variants[i] = calloc(variants_sizes[i], sizeof(struct Node));
-        if (!variants[i]) {
-            errsv = errno;
-            perror("variants");
-            return errsv;
+        if (require_variants) {
+            variants[i] = calloc(variants_sizes[i], sizeof(struct Node));
+            if (!variants[i]) {
+                errsv = errno;
+                perror("variants");
+                return errsv;
+            }
         }
     }
-    rewind(variants_file);
-    skip_header_lines = 1;
-    uint32_t variants_n[23] = {0}
+    if (require_variants) {
+        rewind(variants_file);
+        skip_header_lines = 1;
+    }
+    uint32_t variants_n[23] = {0};
     while (require_variants &&
            getline(&line, &n, variants_file) != -1) {
         struct Node node = {0};
@@ -236,26 +240,22 @@ int main(int argc, char ** argv) {
                           &node.a2,
                           &node.af) != 6) {
             fputs("Invalid variant line\n", stderr);
-            free(node.rsid);
-            free(node.a1);
-            free(node.a2);
+            free_node(&node);
         } else {
             if (node.chr[0] == 'X' || node.chr[1] == 'X') {
                 node.chr_id = 0;
             } else if (sscanf(node.chr, "%2hhu", &node.chr_id) != 1 ||
                        node.chr_id < 1 || node.chr_id > 22) {
                 fputs("Invalid variant chr\n", stderr);
-                free(node.rsid);
-                free(node.a1);
-                free(node.a2);
+                free_node(&node);
                 continue;
             }
             variants[node.chr_id][variants_n[node.chr_id]] = node;
             variants_n[node.chr_id] += 1;
         }
     }
-    for (uint8_t i = 0; i < 23; i += 1) {
-        if (variants_size[i] != variants_n[i]) {
+    for (uint8_t i = 0; require_variants && i < 23; i += 1) {
+        if (variants_sizes[i] != variants_n[i]) {
             fputs("variants_size != variants_n\n", stderr);
         }
     }
@@ -275,9 +275,7 @@ int main(int argc, char ** argv) {
                           &node.a2,
                           &node.p) != 6) {
             fputs("Invalid input line\n", stderr);
-            free(node.rsid);
-            free(node.a1);
-            free(node.a2);
+            free_node(&node);
         } else if (!table_1_mode &&
                    sscanf(line,
                           "%ms %5c %2c %u %ms %ms %lf %*s %*s %*s %*s %*s %hhu",
@@ -290,9 +288,7 @@ int main(int argc, char ** argv) {
                           &node.p,
                           &node.nom) != 8) {
             fputs("Invalid input line\n", stderr);
-            free(node.rsid);
-            free(node.a1);
-            free(node.a2);
+            free_node(&node);
         } else {
             if (node.chr[1] == 'X') {
                 node.chr_id = 0;
@@ -302,9 +298,7 @@ int main(int argc, char ** argv) {
             } else if (sscanf(node.chr, "%2hhu", &node.chr_id) != 1 ||
                        node.chr_id < 1 || node.chr_id > 22) {
                 fputs("Invalid input chr\n", stderr);
-                free(node.rsid);
-                free(node.a1);
-                free(node.a2);
+                free_node(&node);
                 continue;
             }
             if (require_variants) {
@@ -329,9 +323,7 @@ int main(int argc, char ** argv) {
                 }
                 if (l >= n || vars[l].pos != node.pos) {
                     fputs("Variant not found\n", stderr);
-                    free(node.rsid);
-                    free(node.a1);
-                    free(node.a2);
+                    free_node(&node);
                     continue;
                 }
                 node.af = vars[l].af;
@@ -391,9 +383,7 @@ int main(int argc, char ** argv) {
                 if (get_gen_map_dist(map, lead.pos, heap->array[i].pos) < 0.25) {
                     heap->array[i].flag = 1;
                     if (table_1_mode) {
-                        free(heap->array[i].rsid);
-                        free(heap->array[i].a1);
-                        free(heap->array[i].a2);
+                        free_node(&heap->array[i]);
                     } else {
                         nominal_sum += heap->array[i].nom;
                         non_leads[non_leads_n] = heap->array[i];
@@ -410,14 +400,10 @@ int main(int argc, char ** argv) {
                         " %s %.5s",
                         non_leads[i].rsid,
                         non_leads[i].pheno);
-                free(non_leads[i].rsid);
-                free(non_leads[i].a1);
-                free(non_leads[i].a2);
+                free_node(&non_leads[i]);
             }
             fputc('\n', output_file);
-            free(lead.rsid);
-            free(lead.a1);
-            free(lead.a2);
+            free_node(&lead);
         }
         if (!table_1_mode) {
             free(non_leads);
@@ -425,7 +411,9 @@ int main(int argc, char ** argv) {
     }
     for (uint8_t i = 0; i < 23; i += 1) {
         free(heaps[i].array);
-        free(variants[i]);
+        if (require_variants) {
+            free(variants[i]);
+        }
     }
     free(line);
     fclose(input_file);

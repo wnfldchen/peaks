@@ -28,5 +28,5 @@ void emplace_array(struct Node node);
 void make_heaps();
 struct Node extract_heap(struct Heap * heap);
 void batch_delete_heap(struct Heap * heap);
-void free_node(struct Node * node);
+void free_node(struct Node const * node);
 #endif //GREEDYSNPS_HEAP_H
