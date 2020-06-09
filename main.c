@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -6,30 +7,27 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <errno.h>
+#include <alloca.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include "map/maps.h"
 #include "heap/heap.h"
 int main(int argc, char ** argv) {
     enum {
-        INPUT_FILE,
-        OUTPUT_FILE,
+        OUTPUT_PATH,
         CHROMOSOME,
         MIN_P,
         MIN_MAF,
         VARIANTS_FILE,
-        TABLE_1
+        TABLE_1,
+        MAX_PROCS
     };
     struct option const options[] = {
         {
-            .name = "input-file",
+            .name = "output-path",
             .has_arg = required_argument,
             .flag = NULL,
-            .val = INPUT_FILE
-        },
-        {
-            .name = "output-file",
-            .has_arg = required_argument,
-            .flag = NULL,
-            .val = OUTPUT_FILE
+            .val = OUTPUT_PATH
         },
         {
             .name = "chromosome",
@@ -61,38 +59,32 @@ int main(int argc, char ** argv) {
             .flag = NULL,
             .val = TABLE_1
         },
+        {
+            .name = "max-procs",
+            .has_arg = required_argument,
+            .flag = NULL,
+            .val = MAX_PROCS
+        },
         {0}
     };
-    FILE * input_file = NULL;
-    FILE * output_file = NULL;
+    char * output_path = NULL;
     FILE * variants_file = NULL;
     uint8_t chromosome = (uint8_t) (-1);
     uint8_t table_1_mode = 0;
     double min_p = 0.0;
     double min_maf = 0.0;
+    int max_procs = 1;
     int opt_code;
     int errsv;
     do {
         opt_code = getopt_long(argc, argv, "", options, NULL);
         switch (opt_code) {
-            case INPUT_FILE:
-                input_file = fopen(optarg, "r");
-                if (!input_file) {
-                    errsv = errno;
-                    perror("--input-file");
-                    return errsv;
-                }
-                break;
-            case OUTPUT_FILE:
-                output_file = fopen(optarg, "w");
-                if (!output_file) {
-                    errsv = errno;
-                    perror("--output-file");
-                    return errsv;
-                }
+            case OUTPUT_PATH:
+                output_path = strdupa(optarg);
                 break;
             case CHROMOSOME:
-                if (optarg[0] == 'X') {
+                if (optarg[0] == 'X' ||
+                    (optarg[0] && optarg[1] == 'X')) {
                     chromosome = 0;
                 } else if (sscanf(optarg,
                                   "%2hhu",
@@ -127,23 +119,34 @@ int main(int argc, char ** argv) {
             case TABLE_1:
                 table_1_mode = 1;
                 break;
+            case MAX_PROCS:
+                if (sscanf(optarg, "%d", &max_procs) != 1) {
+                    errsv = errno;
+                    perror("--max-procs");
+                    return errsv;
+                }
+                break;
             case '?':
                 fputs("Error parsing arguments\n", stderr);
                 return EINVAL;
         }
     } while (opt_code != -1);
-    uint8_t const filter_chromosome = chromosome != (uint8_t) (-1);
+    if (!output_path) {
+        fputs("No output path\n", stderr);
+        return EINVAL;
+    }
+    if (optind >= argc) {
+        fputs("No input file\n", stderr);
+        return EINVAL;
+    }
+    if (max_procs < 1) {
+        fputs("Invalid --max-procs\n", stderr);
+        return EINVAL;
+    }
     uint8_t const threshold_maf = min_maf > 0.0;
     uint8_t const threshold_p = min_p > 0.0;
     uint8_t const require_variants = threshold_maf || table_1_mode;
-    if (!input_file) {
-        fputs("No --input-file\n", stderr);
-        return EINVAL;
-    }
-    if (!output_file) {
-        fputs("No --output-file\n", stderr);
-        return EINVAL;
-    }
+    uint8_t const filter_chromosome = chromosome != (uint8_t) (-1);
     if (filter_chromosome && chromosome > 22) {
         fputs("Invalid --chromosome\n", stderr);
         return EINVAL;
@@ -167,29 +170,7 @@ int main(int argc, char ** argv) {
     char * line = NULL;
     size_t n = 0;
     uint8_t skip_header_lines = 1;
-    uint32_t heap_sizes[23] = {0};
     uint32_t variants_sizes[23] = {0};
-    while (getline(&line, &n, input_file) != -1) {
-        char chr[2] = {0};
-        uint8_t i;
-        if (skip_header_lines) {
-            skip_header_lines -= 1;
-        } else if (table_1_mode &&
-                   sscanf(line, "%2c", chr) != 1) {
-            fputs("Invalid input chr\n", stderr);
-        } else if (!table_1_mode &&
-                   sscanf(line, "%*s %*s %2c", chr) != 1) {
-            fputs("Invalid input chr\n", stderr);
-        } else if (chr[0] == 'X' || chr[1] == 'X') {
-            heap_sizes[0] += 1;
-        } else if (sscanf(chr, "%2hhu", &i) != 1 ||
-                   i < 1 || i > 22) {
-            fputs("Invalid input chr\n", stderr);
-        } else {
-            heap_sizes[i] += 1;
-        }
-    }
-    skip_header_lines = 1;
     while (require_variants &&
            getline(&line, &n, variants_file) != -1) {
         uint8_t i;
@@ -205,20 +186,12 @@ int main(int argc, char ** argv) {
         }
     }
     struct Node * variants[23] = {0};
-    for (uint8_t i = 0; i < 23; i += 1) {
-        heaps[i].array = calloc(heap_sizes[i], sizeof(struct Node));
-        if (!heaps[i].array) {
+    for (uint8_t i = 0; require_variants && i < 23; i += 1) {
+        variants[i] = calloc(variants_sizes[i], sizeof(struct Node));
+        if (!variants[i]) {
             errsv = errno;
-            perror("heaps");
+            perror("variants");
             return errsv;
-        }
-        if (require_variants) {
-            variants[i] = calloc(variants_sizes[i], sizeof(struct Node));
-            if (!variants[i]) {
-                errsv = errno;
-                perror("variants");
-                return errsv;
-            }
         }
     }
     if (require_variants) {
@@ -250,13 +223,94 @@ int main(int argc, char ** argv) {
                 free_node(&node);
                 continue;
             }
-            variants[node.chr_id][variants_n[node.chr_id]] = node;
-            variants_n[node.chr_id] += 1;
+            uint8_t const i = node.chr_id;
+            variants[i][variants_n[i]] = node;
+            variants_n[i] += 1;
         }
     }
     for (uint8_t i = 0; require_variants && i < 23; i += 1) {
         if (variants_sizes[i] != variants_n[i]) {
             fputs("variants_size != variants_n\n", stderr);
+        }
+    }
+    FILE * input_file = NULL;
+    FILE * output_file = NULL;
+    pid_t pid;
+    for (int i = optind; i < argc; i += 1) {
+        if (i - optind >= max_procs) {
+            wait(NULL);
+        }
+        pid = fork();
+        if (pid == -1) {
+            errsv = errno;
+            perror("fork");
+            return errsv;
+        }
+        if (!pid) {
+            input_file = fopen(argv[i], "r");
+            if (!input_file) {
+                errsv = errno;
+                perror("input_file");
+                _exit(errsv);
+            }
+            char * const b = basename(argv[i]);
+            char * const s = alloca(strlen(output_path) +
+                              strlen(b) + 2);
+            if (stpcpy(s, output_path)[-1] != '/') {
+                strcat(s, "/");
+            }
+            strcat(s, b);
+            output_file = fopen(s, "w");
+            if (!output_file) {
+                errsv = errno;
+                perror("output_file");
+                _exit(errsv);
+            }
+            break;
+        }
+    }
+    if (pid) {
+        free(line);
+    }
+    for (uint8_t i = 0;
+         pid && require_variants && i < 23;
+         i += 1) {
+        free(variants[i]);
+    }
+    for (int i = 0; pid && i < max_procs; i += 1) {
+        wait(NULL);
+    }
+    if (pid) {
+        return EXIT_SUCCESS;
+    }
+    skip_header_lines = 1;
+    uint32_t heap_sizes[23] = {0};
+    while (getline(&line, &n, input_file) != -1) {
+        char chr[2] = {0};
+        uint8_t i;
+        if (skip_header_lines) {
+            skip_header_lines -= 1;
+        } else if (table_1_mode &&
+                   sscanf(line, "%2c", chr) != 1) {
+            fputs("Invalid input chr\n", stderr);
+        } else if (!table_1_mode &&
+                   sscanf(line, "%*s %*s %2c", chr) != 1) {
+            fputs("Invalid input chr\n", stderr);
+        } else if (chr[0] == 'X' || chr[1] == 'X') {
+            heap_sizes[0] += 1;
+        } else if (sscanf(chr, "%2hhu", &i) != 1 ||
+                   i < 1 || i > 22) {
+            fputs("Invalid input chr\n", stderr);
+        } else {
+            heap_sizes[i] += 1;
+        }
+    }
+    for (uint8_t i = 0; i < 23; i += 1) {
+        heaps[i].array = calloc(heap_sizes[i], sizeof(struct Node));
+        if (!heaps[i].array) {
+            errsv = errno;
+            perror("heaps");
+            _exit(errsv);
         }
     }
     rewind(input_file);
@@ -423,5 +477,5 @@ int main(int argc, char ** argv) {
     if (variants_file) {
         fclose(variants_file);
     }
-    return 0;
+    _exit(EXIT_SUCCESS);
 }
