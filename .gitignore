@@ -1,3 +1,5 @@
 .idea
 cmake-build-debug
+cmake-build-debug-cedar
 cmake-build-release
+cmake-build-release-cedar

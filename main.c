@@ -290,12 +290,12 @@ int main(int argc, char ** argv) {
         uint8_t i;
         if (skip_header_lines) {
             skip_header_lines -= 1;
-        } else if (table_1_mode &&
-                   sscanf(line, "%2c", chr) != 1) {
-            fputs("Invalid input chr\n", stderr);
-        } else if (!table_1_mode &&
-                   sscanf(line, "%*s %*s %2c", chr) != 1) {
-            fputs("Invalid input chr\n", stderr);
+        } else if ((table_1_mode &&
+                    sscanf(line, "%2c", chr) != 1)
+                   ||
+                   (!table_1_mode &&
+                    sscanf(line, "%*s %*s %2c", chr) != 1)) {
+            fputs("Invalid input line\n", stderr);
         } else if (chr[0] == 'X' || chr[1] == 'X') {
             heap_sizes[0] += 1;
         } else if (sscanf(chr, "%2hhu", &i) != 1 ||
@@ -319,28 +319,27 @@ int main(int argc, char ** argv) {
         struct Node node = {0};
         if (skip_header_lines) {
             skip_header_lines -= 1;
-        } else if (table_1_mode &&
-                   sscanf(line,
-                          "%2c %ms %u %ms %ms %*s %*s %lf",
-                          node.chr,
-                          &node.rsid,
-                          &node.pos,
-                          &node.a1,
-                          &node.a2,
-                          &node.p) != 6) {
-            fputs("Invalid input line\n", stderr);
-            free_node(&node);
-        } else if (!table_1_mode &&
-                   sscanf(line,
-                          "%ms %5c %2c %u %ms %ms %lf %*s %*s %*s %*s %*s %hhu",
-                          &node.rsid,
-                          node.pheno,
-                          node.chr,
-                          &node.pos,
-                          &node.a1,
-                          &node.a2,
-                          &node.p,
-                          &node.nom) != 8) {
+        } else if ((table_1_mode &&
+                    sscanf(line,
+                           "%2c %ms %u %ms %ms %*s %*s %lf",
+                           node.chr,
+                           &node.rsid,
+                           &node.pos,
+                           &node.a1,
+                           &node.a2,
+                           &node.p) != 6)
+                   ||
+                   (!table_1_mode &&
+                    sscanf(line,
+                           "%ms %5c %2c %u %ms %ms %lf %*s %*s %*s %*s %*s %hhu",
+                           &node.rsid,
+                           node.pheno,
+                           node.chr,
+                           &node.pos,
+                           &node.a1,
+                           &node.a2,
+                           &node.p,
+                           &node.nom) != 8)) {
             fputs("Invalid input line\n", stderr);
             free_node(&node);
         } else {
@@ -357,9 +356,9 @@ int main(int argc, char ** argv) {
             }
             if (require_variants) {
                 struct Node * const vars = variants[node.chr_id];
-                uint32_t const n = variants_n[node.chr_id];
+                uint32_t const v_n = variants_n[node.chr_id];
                 uint32_t l = 0;
-                uint32_t r = n;
+                uint32_t r = v_n;
                 while (l < r) {
                     uint32_t const m = (l + r) / 2;
                     uint32_t const m_pos = vars[m].pos;
@@ -369,13 +368,13 @@ int main(int argc, char ** argv) {
                         r = m;
                     }
                 }
-                while (l < n && vars[l].pos == node.pos &&
+                while (l < v_n && vars[l].pos == node.pos &&
                        (strcmp(vars[l].rsid, node.rsid) ||
                         strcmp(vars[l].a1, node.a1) ||
                         strcmp(vars[l].a2, node.a2))) {
                     l += 1;
                 }
-                if (l >= n || vars[l].pos != node.pos) {
+                if (l >= v_n || vars[l].pos != node.pos) {
                     fputs("Variant not found\n", stderr);
                     free_node(&node);
                     continue;
@@ -449,7 +448,7 @@ int main(int argc, char ** argv) {
             }
             batch_delete_heap(heap);
             if (!table_1_mode) {
-                fprintf(output_file, " %hu", nominal_sum);
+                fprintf(output_file, " %u", nominal_sum);
             }
             for (uint32_t i = 0; !table_1_mode && i < non_leads_n; i += 1) {
                 fprintf(output_file,
