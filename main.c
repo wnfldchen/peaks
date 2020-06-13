@@ -12,6 +12,23 @@
 #include <sys/wait.h>
 #include "map/maps.h"
 #include "heap/heap.h"
+
+struct Variant {
+    char * rsid;
+    char * a1;
+    char * a2;
+    double af;
+    uint32_t pos;
+    char chr[2];
+    uint8_t chr_id;
+};
+
+void free_variant(struct Variant * variant) {
+    free(variant->rsid);
+    free(variant->a1);
+    free(variant->a2);
+}
+
 int main(int argc, char ** argv) {
     enum {
         OUTPUT_PATH,
@@ -185,9 +202,9 @@ int main(int argc, char ** argv) {
             variants_sizes[i] += 1;
         }
     }
-    struct Node * variants[23] = {0};
+    struct Variant * variants[23] = {0};
     for (uint8_t i = 0; require_variants && i < 23; i += 1) {
-        variants[i] = calloc(variants_sizes[i], sizeof(struct Node));
+        variants[i] = calloc(variants_sizes[i], sizeof(struct Variant));
         if (!variants[i]) {
             errsv = errno;
             perror("variants");
@@ -201,7 +218,7 @@ int main(int argc, char ** argv) {
     uint32_t variants_n[23] = {0};
     while (require_variants &&
            getline(&line, &n, variants_file) != -1) {
-        struct Node node = {0};
+        struct Variant node = {0};
         if (skip_header_lines) {
             skip_header_lines -= 1;
         } else if (sscanf(line,
@@ -213,14 +230,14 @@ int main(int argc, char ** argv) {
                           &node.a2,
                           &node.af) != 6) {
             fputs("Invalid variant line\n", stderr);
-            free_node(&node);
+            free_variant(&node);
         } else {
             if (node.chr[0] == 'X' || node.chr[1] == 'X') {
                 node.chr_id = 0;
             } else if (sscanf(node.chr, "%2hhu", &node.chr_id) != 1 ||
                        node.chr_id < 1 || node.chr_id > 22) {
                 fputs("Invalid variant chr\n", stderr);
-                free_node(&node);
+                free_variant(&node);
                 continue;
             }
             uint8_t const i = node.chr_id;
@@ -275,6 +292,10 @@ int main(int argc, char ** argv) {
     for (uint8_t i = 0;
          pid && require_variants && i < 23;
          i += 1) {
+        uint32_t const v_n = variants_n[i];
+        for (uint32_t j = 0; j < v_n; j += 1) {
+            free_variant(&variants[i][j]);
+        }
         free(variants[i]);
     }
     for (int i = 0; pid && i < max_procs; i += 1) {
@@ -355,7 +376,7 @@ int main(int argc, char ** argv) {
                 continue;
             }
             if (require_variants) {
-                struct Node * const vars = variants[node.chr_id];
+                struct Variant * const vars = variants[node.chr_id];
                 uint32_t const v_n = variants_n[node.chr_id];
                 uint32_t l = 0;
                 uint32_t r = v_n;
@@ -467,6 +488,10 @@ int main(int argc, char ** argv) {
     for (uint8_t i = 0; i < 23; i += 1) {
         free(heaps[i].array);
         if (require_variants) {
+            uint32_t const v_n = variants_n[i];
+            for (uint32_t j = 0; j < v_n; j += 1) {
+                free_variant(&variants[i][j]);
+            }
             free(variants[i]);
         }
     }
