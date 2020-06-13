@@ -37,7 +37,8 @@ int main(int argc, char ** argv) {
         MIN_MAF,
         VARIANTS_FILE,
         TABLE_1,
-        MAX_PROCS
+        MAX_PROCS,
+        EXCLUDE_FILE
     };
     struct option const options[] = {
         {
@@ -82,10 +83,17 @@ int main(int argc, char ** argv) {
             .flag = NULL,
             .val = MAX_PROCS
         },
+        {
+            .name = "exclude-file",
+            .has_arg = required_argument,
+            .flag = NULL,
+            .val = EXCLUDE_FILE
+        },
         {0}
     };
     char * output_path = NULL;
     FILE * variants_file = NULL;
+    FILE * exclude_file = NULL;
     uint8_t chromosome = (uint8_t) (-1);
     uint8_t table_1_mode = 0;
     double min_p = 0.0;
@@ -140,6 +148,14 @@ int main(int argc, char ** argv) {
                 if (sscanf(optarg, "%d", &max_procs) != 1) {
                     errsv = errno;
                     perror("--max-procs");
+                    return errsv;
+                }
+                break;
+            case EXCLUDE_FILE:
+                exclude_file = fopen(optarg, "r");
+                if (!exclude_file) {
+                    errsv = errno;
+                    perror("--exclude-file");
                     return errsv;
                 }
                 break;
@@ -250,6 +266,63 @@ int main(int argc, char ** argv) {
             fputs("variants_size != variants_n\n", stderr);
         }
     }
+    uint32_t exclude_sizes[23] = {0};
+    while (exclude_file &&
+           getline(&line, &n, exclude_file) != -1) {
+        uint8_t i;
+        if (line[0] == 'X' || line[1] == 'X') {
+            exclude_sizes[0] += 1;
+        } else if (sscanf(line, "%2hhu", &i) != 1 ||
+                   i < 1 || i > 22) {
+            fputs("Invalid exclude chr\n", stderr);
+        } else {
+            exclude_sizes[i] += 1;
+        }
+    }
+    struct Node * exclude[23] = {0};
+    for (uint8_t i = 0; exclude_file && i < 23; i += 1) {
+        exclude[i] = calloc(exclude_sizes[i], sizeof(struct Node));
+        if (!exclude[i]) {
+            errsv = errno;
+            perror("exclude");
+            return errsv;
+        }
+    }
+    if (exclude_file) {
+        rewind(exclude_file);
+    }
+    uint32_t exclude_n[23] = {0};
+    while (exclude_file &&
+           getline(&line, &n, exclude_file) != -1) {
+        struct Node node = {0};
+        if (sscanf(line,
+                   "%2c_%u_%m[^_]_%m[^_]",
+                   node.chr,
+                   &node.pos,
+                   &node.a1,
+                   &node.a2) != 4) {
+            fputs("Invalid exclude entry\n", stderr);
+            free_node(&node);
+        } else {
+            if (node.chr[0] == 'X' || node.chr[1] == 'X') {
+                node.chr_id = 0;
+            } else if (sscanf(node.chr, "%2hhu", &node.chr_id) != 1 ||
+                       node.chr_id < 1 || node.chr_id > 22) {
+                fputs("Invalid exclude chr\n", stderr);
+                free_node(&node);
+                continue;
+            }
+            uint8_t const i = node.chr_id;
+            exclude[i][exclude_n[i]] = node;
+            exclude_n[i] += 1;
+        }
+    }
+    if (variants_file) {
+        fclose(variants_file);
+    }
+    if (exclude_file) {
+        fclose(exclude_file);
+    }
     FILE * input_file = NULL;
     FILE * output_file = NULL;
     pid_t pid;
@@ -290,13 +363,22 @@ int main(int argc, char ** argv) {
         free(line);
     }
     for (uint8_t i = 0;
-         pid && require_variants && i < 23;
+         pid && (require_variants || exclude_file) && i < 23;
          i += 1) {
         uint32_t const v_n = variants_n[i];
-        for (uint32_t j = 0; j < v_n; j += 1) {
-            free_variant(&variants[i][j]);
+        uint32_t const e_n = exclude_n[i];
+        if (require_variants) {
+            for (uint32_t j = 0; j < v_n; j += 1) {
+                free_variant(&variants[i][j]);
+            }
+            free(variants[i]);
         }
-        free(variants[i]);
+        if (exclude_file) {
+            for (uint32_t j = 0; j < e_n; j += 1) {
+                free_node(&exclude[i][j]);
+            }
+            free(exclude[i]);
+        }
     }
     for (int i = 0; pid && i < max_procs; i += 1) {
         wait(NULL);
@@ -374,6 +456,30 @@ int main(int argc, char ** argv) {
                 fputs("Invalid input chr\n", stderr);
                 free_node(&node);
                 continue;
+            }
+            if (exclude_file) {
+                struct Node * const excl = exclude[node.chr_id];
+                uint32_t const n = exclude_n[node.chr_id];
+                uint32_t l = 0;
+                uint32_t r = n;
+                while (l < r) {
+                    uint32_t const m = (l + r) / 2;
+                    uint32_t const m_pos = excl[m].pos;
+                    if (m_pos < node.pos) {
+                        l = m + 1;
+                    } else {
+                        r = m;
+                    }
+                }
+                while (l < n && excl[l].pos == node.pos &&
+                       (strcmp(excl[l].a1, node.a1) ||
+                        strcmp(excl[l].a2, node.a2))) {
+                    l += 1;
+                }
+                if (l < n && excl[l].pos == node.pos) {
+                    free_node(&node);
+                    continue;
+                }
             }
             if (require_variants) {
                 struct Variant * const vars = variants[node.chr_id];
@@ -494,12 +600,15 @@ int main(int argc, char ** argv) {
             }
             free(variants[i]);
         }
+        if (exclude_file) {
+            for (uint32_t j = 0; j < exclude_n[i]; j += 1) {
+                free_node(&exclude[i][j]);
+            }
+            free(exclude[i]);
+        }
     }
     free(line);
     fclose(input_file);
     fclose(output_file);
-    if (variants_file) {
-        fclose(variants_file);
-    }
     _exit(EXIT_SUCCESS);
 }
