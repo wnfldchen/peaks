@@ -12,35 +12,8 @@
 #include <sys/wait.h>
 #include "map/maps.h"
 #include "heap/heap.h"
-
-struct Variant {
-    char * rsid;
-    char * a1;
-    char * a2;
-    double af;
-    uint32_t pos;
-    char chr[2];
-    uint8_t chr_id;
-};
-
-struct Exclude {
-    char * a1;
-    char * a2;
-    uint32_t pos;
-    char chr[2];
-    uint8_t chr_id;
-};
-
-void free_variant(struct Variant * variant) {
-    free(variant->rsid);
-    free(variant->a1);
-    free(variant->a2);
-}
-
-void free_exclude(struct Exclude * exclude) {
-    free(exclude->a1);
-    free(exclude->a2);
-}
+#include "variant/variant.h"
+#include "exclude/exclude.h"
 
 int main(int argc, char ** argv) {
     enum {
