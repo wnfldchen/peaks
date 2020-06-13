@@ -23,10 +23,23 @@ struct Variant {
     uint8_t chr_id;
 };
 
+struct Exclude {
+    char * a1;
+    char * a2;
+    uint32_t pos;
+    char chr[2];
+    uint8_t chr_id;
+};
+
 void free_variant(struct Variant * variant) {
     free(variant->rsid);
     free(variant->a1);
     free(variant->a2);
+}
+
+void free_exclude(struct Exclude * exclude) {
+    free(exclude->a1);
+    free(exclude->a2);
 }
 
 int main(int argc, char ** argv) {
@@ -279,9 +292,9 @@ int main(int argc, char ** argv) {
             exclude_sizes[i] += 1;
         }
     }
-    struct Node * exclude[23] = {0};
+    struct Exclude * exclude[23] = {0};
     for (uint8_t i = 0; exclude_file && i < 23; i += 1) {
-        exclude[i] = calloc(exclude_sizes[i], sizeof(struct Node));
+        exclude[i] = calloc(exclude_sizes[i], sizeof(struct Exclude));
         if (!exclude[i]) {
             errsv = errno;
             perror("exclude");
@@ -294,7 +307,7 @@ int main(int argc, char ** argv) {
     uint32_t exclude_n[23] = {0};
     while (exclude_file &&
            getline(&line, &n, exclude_file) != -1) {
-        struct Node node = {0};
+        struct Exclude node = {0};
         if (sscanf(line,
                    "%2c_%u_%m[^_]_%m[^_]",
                    node.chr,
@@ -302,14 +315,14 @@ int main(int argc, char ** argv) {
                    &node.a1,
                    &node.a2) != 4) {
             fputs("Invalid exclude entry\n", stderr);
-            free_node(&node);
+            free_exclude(&node);
         } else {
             if (node.chr[0] == 'X' || node.chr[1] == 'X') {
                 node.chr_id = 0;
             } else if (sscanf(node.chr, "%2hhu", &node.chr_id) != 1 ||
                        node.chr_id < 1 || node.chr_id > 22) {
                 fputs("Invalid exclude chr\n", stderr);
-                free_node(&node);
+                free_exclude(&node);
                 continue;
             }
             uint8_t const i = node.chr_id;
@@ -375,7 +388,7 @@ int main(int argc, char ** argv) {
         }
         if (exclude_file) {
             for (uint32_t j = 0; j < e_n; j += 1) {
-                free_node(&exclude[i][j]);
+                free_exclude(&exclude[i][j]);
             }
             free(exclude[i]);
         }
@@ -458,10 +471,10 @@ int main(int argc, char ** argv) {
                 continue;
             }
             if (exclude_file) {
-                struct Node * const excl = exclude[node.chr_id];
-                uint32_t const n = exclude_n[node.chr_id];
+                struct Exclude * const excl = exclude[node.chr_id];
+                uint32_t const e_n = exclude_n[node.chr_id];
                 uint32_t l = 0;
-                uint32_t r = n;
+                uint32_t r = e_n;
                 while (l < r) {
                     uint32_t const m = (l + r) / 2;
                     uint32_t const m_pos = excl[m].pos;
@@ -471,12 +484,12 @@ int main(int argc, char ** argv) {
                         r = m;
                     }
                 }
-                while (l < n && excl[l].pos == node.pos &&
+                while (l < e_n && excl[l].pos == node.pos &&
                        (strcmp(excl[l].a1, node.a1) ||
                         strcmp(excl[l].a2, node.a2))) {
                     l += 1;
                 }
-                if (l < n && excl[l].pos == node.pos) {
+                if (l < e_n && excl[l].pos == node.pos) {
                     free_node(&node);
                     continue;
                 }
@@ -602,7 +615,7 @@ int main(int argc, char ** argv) {
         }
         if (exclude_file) {
             for (uint32_t j = 0; j < exclude_n[i]; j += 1) {
-                free_node(&exclude[i][j]);
+                free_exclude(&exclude[i][j]);
             }
             free(exclude[i]);
         }
