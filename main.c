@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <errno.h>
@@ -468,6 +469,7 @@ int main(int argc, char ** argv) {
                 continue;
             }
             if (fisher_mode) {
+                node.p = -log10(node.p);
                 struct Variant * const vars = variants[node.chr_id];
                 node.a1 = strdup(vars[fisher_lines].a1);
                 node.a2 = strdup(vars[fisher_lines].a2);
