@@ -10,3 +10,4 @@ add_executable(greedysnps main.c
         map/map15.c map/map16.c map/map17.c map/map18.c map/map19.c
         map/map20.c map/map21.c map/map22.c
         map/maps.c heap/heap.c variant/variant.c exclude/exclude.c)
+target_link_libraries(greedysnps m)
