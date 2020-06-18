@@ -470,9 +470,10 @@ int main(int argc, char ** argv) {
             }
             if (fisher_mode) {
                 node.p = -log10(node.p);
-                struct Variant * const vars = variants[node.chr_id];
-                node.a1 = strdup(vars[fisher_lines].a1);
-                node.a2 = strdup(vars[fisher_lines].a2);
+                struct Variant const var = variants[node.chr_id][fisher_lines];
+                node.a1 = strdup(var.a1);
+                node.a2 = strdup(var.a2);
+                node.af = var.af;
                 fisher_lines += 1;
             }
             if (exclude_file) {
@@ -499,7 +500,7 @@ int main(int argc, char ** argv) {
                     continue;
                 }
             }
-            if (require_variants) {
+            if (require_variants && !fisher_mode) {
                 struct Variant * const vars = variants[node.chr_id];
                 uint32_t const v_n = variants_n[node.chr_id];
                 uint32_t l = 0;
