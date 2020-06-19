@@ -485,7 +485,6 @@ int main(int argc, char ** argv) {
                 continue;
             }
             if (fisher_mode) {
-                node.p = -log10(node.p);
                 struct Variant const var = variants[node.chr_id][fisher_lines];
                 node.a1 = strdup(var.a1);
                 node.a2 = strdup(var.a2);
