@@ -25,6 +25,7 @@ int main(int argc, char ** argv) {
         VARIANTS_FILE,
         TABLE_1,
         FISHER,
+        DEBUG,
         MAX_PROCS,
         EXCLUDE_FILE
     };
@@ -72,6 +73,12 @@ int main(int argc, char ** argv) {
             .val = FISHER
         },
         {
+            .name = "debug",
+            .has_arg = no_argument,
+            .flag = NULL,
+            .val = DEBUG
+        },
+        {
             .name = "max-procs",
             .has_arg = required_argument,
             .flag = NULL,
@@ -91,6 +98,7 @@ int main(int argc, char ** argv) {
     uint8_t chromosome = (uint8_t) (-1);
     uint8_t table_1_mode = 0;
     uint8_t fisher_mode = 0;
+    uint8_t debug_mode = 0;
     double min_p = 0.0;
     double min_maf = 0.0;
     int max_procs = 1;
@@ -141,6 +149,9 @@ int main(int argc, char ** argv) {
                 break;
             case FISHER:
                 fisher_mode = 1;
+                break;
+            case DEBUG:
+                debug_mode = 1;
                 break;
             case MAX_PROCS:
                 if (sscanf(optarg, "%d", &max_procs) != 1) {
@@ -388,6 +399,11 @@ int main(int argc, char ** argv) {
     if (pid) {
         return EXIT_SUCCESS;
     }
+    uint32_t exclude_count = 0;
+    uint32_t min_maf_count = 0;
+    uint32_t min_p_count = 0;
+    uint32_t chr_count = 0;
+    uint32_t emplace_count = 0;
     skip_header_lines = 1;
     uint32_t heap_sizes[23] = {0};
     while (getline(&line, &n, input_file) != -1) {
@@ -497,6 +513,9 @@ int main(int argc, char ** argv) {
                 }
                 if (l < e_n && excl[l].pos == node.pos) {
                     free_node(&node);
+                    if (debug_mode) {
+                        exclude_count += 1;
+                    }
                     continue;
                 }
             }
@@ -533,11 +552,24 @@ int main(int argc, char ** argv) {
             if ((!threshold_p || node.p > min_p) &&
                 (!threshold_maf || (node.af > min_maf && node.af < 1.0 - min_maf)) &&
                 (chromosome == (uint8_t) (-1) || node.chr_id == chromosome)) {
+                if (debug_mode) {
+                    emplace_count += 1;
+                }
                 emplace_array(node);
             } else {
+                if (debug_mode && threshold_p && node.p <= min_p) {
+                    min_p_count += 1;
+                } else if (debug_mode && threshold_maf && (node.af <= min_maf || node.af >= 1.0 - min_maf)) {
+                    min_maf_count += 1;
+                } else if (debug_mode && chromosome != (uint8_t) (-1) && node.chr_id != chromosome) {
+                    chr_count += 1;
+                }
                 free_node(&node);
             }
         }
+    }
+    if (debug_mode) {
+        printf("%u %u %u %u %u\n", exclude_count, min_maf_count, min_p_count, chr_count, emplace_count);
     }
     make_heaps();
     if (table_1_mode) {
