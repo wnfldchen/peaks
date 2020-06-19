@@ -570,6 +570,7 @@ int main(int argc, char ** argv) {
     }
     if (debug_mode) {
         printf("%u %u %u %u %u\n", exclude_count, min_maf_count, min_p_count, chr_count, emplace_count);
+        fflush(stdout);
     }
     make_heaps();
     if (table_1_mode) {
