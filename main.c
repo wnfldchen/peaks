@@ -23,7 +23,6 @@ int main(int argc, char ** argv) {
         MIN_MAF,
         VARIANTS_FILE,
         TABLE_1,
-        FISHER,
         DEBUG,
         MAX_PROCS,
         EXCLUDE_FILE
@@ -66,12 +65,6 @@ int main(int argc, char ** argv) {
             .val = TABLE_1
         },
         {
-            .name = "fisher",
-            .has_arg = no_argument,
-            .flag = NULL,
-            .val = FISHER
-        },
-        {
             .name = "debug",
             .has_arg = no_argument,
             .flag = NULL,
@@ -96,7 +89,6 @@ int main(int argc, char ** argv) {
     FILE * exclude_file = NULL;
     uint8_t chromosome = (uint8_t) (-1);
     uint8_t table_1_mode = 0;
-    uint8_t fisher_mode = 0;
     uint8_t debug_mode = 0;
     double min_p = 0.0;
     double min_maf = 0.0;
@@ -146,9 +138,6 @@ int main(int argc, char ** argv) {
             case TABLE_1:
                 table_1_mode = 1;
                 break;
-            case FISHER:
-                fisher_mode = 1;
-                break;
             case DEBUG:
                 debug_mode = 1;
                 break;
@@ -186,7 +175,7 @@ int main(int argc, char ** argv) {
     }
     uint8_t const threshold_maf = min_maf > 0.0;
     uint8_t const threshold_p = min_p > 0.0;
-    uint8_t const require_variants = threshold_maf || table_1_mode || fisher_mode;
+    uint8_t const require_variants = threshold_maf || table_1_mode;
     uint8_t const filter_chromosome = chromosome != (uint8_t) (-1);
     if (filter_chromosome && chromosome > 22) {
         fputs("Invalid --chromosome\n", stderr);
@@ -202,10 +191,6 @@ int main(int argc, char ** argv) {
     }
     if (table_1_mode && !variants_file) {
         fputs("--table-1 requires --variants-file\n", stderr);
-        return EINVAL;
-    }
-    if (fisher_mode && !variants_file) {
-        fputs("--fisher requires --variants-file\n", stderr);
         return EINVAL;
     }
     if (min_p < 0.0) {
@@ -410,10 +395,10 @@ int main(int argc, char ** argv) {
         uint8_t i;
         if (skip_header_lines) {
             skip_header_lines -= 1;
-        } else if (((table_1_mode || fisher_mode) &&
+        } else if ((table_1_mode &&
                     sscanf(line, "%2c", chr) != 1)
                    ||
-                   ((!table_1_mode && !fisher_mode) &&
+                   (!table_1_mode &&
                     sscanf(line, "%*s %*s %2c", chr) != 1)) {
             fputs("Invalid input line\n", stderr);
         } else if (chr[0] == 'X' || chr[1] == 'X') {
@@ -435,12 +420,11 @@ int main(int argc, char ** argv) {
     }
     rewind(input_file);
     skip_header_lines = 1;
-    uint32_t fisher_lines = 0;
     while (getline(&line, &n, input_file) != -1) {
         struct Node node = {0};
         if (skip_header_lines) {
             skip_header_lines -= 1;
-        } else if (((table_1_mode && !fisher_mode) &&
+        } else if ((table_1_mode &&
                     sscanf(line,
                            "%2c %ms %u %ms %ms %*s %*s %lf",
                            node.chr,
@@ -450,7 +434,7 @@ int main(int argc, char ** argv) {
                            &node.a2,
                            &node.p) != 6)
                    ||
-                   ((!table_1_mode && !fisher_mode) &&
+                   (!table_1_mode &&
                     sscanf(line,
                            "%ms %5c %2c %u %ms %ms %lf %*s %*s %*s %*s %*s %hhu",
                            &node.rsid,
@@ -460,15 +444,7 @@ int main(int argc, char ** argv) {
                            &node.a1,
                            &node.a2,
                            &node.p,
-                           &node.nom) != 8)
-                   ||
-                   (fisher_mode &&
-                    sscanf(line,
-                           "%2c %ms %u %*s %*s %lf",
-                           node.chr,
-                           &node.rsid,
-                           &node.pos,
-                           &node.p) != 4)) {
+                           &node.nom) != 8)) {
             fputs("Invalid input line\n", stderr);
             free_node(&node);
         } else {
@@ -482,13 +458,6 @@ int main(int argc, char ** argv) {
                 fputs("Invalid input chr\n", stderr);
                 free_node(&node);
                 continue;
-            }
-            if (fisher_mode) {
-                struct Variant const var = variants[node.chr_id][fisher_lines];
-                node.a1 = strdup(var.a1);
-                node.a2 = strdup(var.a2);
-                node.af = var.af;
-                fisher_lines += 1;
             }
             if (exclude_file) {
                 struct Exclude * const excl = exclude[node.chr_id];
@@ -517,7 +486,7 @@ int main(int argc, char ** argv) {
                     continue;
                 }
             }
-            if (require_variants && !fisher_mode) {
+            if (require_variants) {
                 struct Variant * const vars = variants[node.chr_id];
                 uint32_t const v_n = variants_n[node.chr_id];
                 uint32_t l = 0;
