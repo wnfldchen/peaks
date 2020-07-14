@@ -4,8 +4,8 @@
 
 #include <stdint.h>
 #include "map.h"
-#include "map22.h"
-struct Map const map22 = (struct Map const){
+
+struct map const map22 = {
     .n = 43414,
     .position = (uint32_t const[])
 {

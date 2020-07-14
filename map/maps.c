@@ -2,36 +2,13 @@
 // Created by winfield on 2020-05-11.
 //
 
-#include <stddef.h>
 #include <stdint.h>
+#include "format.h"
 #include "map.h"
-#include "map0X.h"
-#include "map01.h"
-#include "map02.h"
-#include "map03.h"
-#include "map04.h"
-#include "map05.h"
-#include "map06.h"
-#include "map07.h"
-#include "map08.h"
-#include "map09.h"
-#include "map10.h"
-#include "map11.h"
-#include "map12.h"
-#include "map13.h"
-#include "map14.h"
-#include "map15.h"
-#include "map16.h"
-#include "map17.h"
-#include "map18.h"
-#include "map19.h"
-#include "map20.h"
-#include "map21.h"
-#include "map22.h"
 #include "maps.h"
 
-struct Map const * get_map_p(uint8_t const i) {
-    static struct Map const * const maps[] = {
+struct map const * get_map_p(uint8_t const i) {
+    static struct map const * const maps[] = {
         &map0X, &map01, &map02, &map03, &map04,
         &map05, &map06, &map07, &map08, &map09,
         &map10, &map11, &map12, &map13, &map14,
@@ -41,7 +18,7 @@ struct Map const * get_map_p(uint8_t const i) {
     return maps[i];
 }
 
-uint32_t binary_search(struct Map const * const map, uint32_t const pos) {
+uint32_t binary_search(struct map const * const map, uint32_t const pos) {
     uint32_t l = 0;
     uint32_t r = map->n;
     while (l < r) {
@@ -56,7 +33,7 @@ uint32_t binary_search(struct Map const * const map, uint32_t const pos) {
     return r ? r - 1 : 0;
 }
 
-double get_gen_map_cm(struct Map const * const map, uint32_t const pos) {
+double get_gen_map_cm(struct map const * const map, uint32_t const pos) {
     uint32_t r = binary_search(map, pos);
     uint32_t r_pos = map->position[r];
     double r_map = map->gen_map[r];
@@ -73,7 +50,7 @@ double get_gen_map_cm(struct Map const * const map, uint32_t const pos) {
     }
 }
 
-double get_gen_map_dist(struct Map const * const map, uint32_t const a, uint32_t const b) {
+double get_gen_map_dist(struct map const * const map, uint32_t const a, uint32_t const b) {
     if (b > a) {
         return get_gen_map_cm(map, b) - get_gen_map_cm(map, a);
     } else if (b < a) {
@@ -81,4 +58,19 @@ double get_gen_map_dist(struct Map const * const map, uint32_t const a, uint32_t
     } else {
         return 0.0;
     }
+}
+
+int calc_gd(struct format const * const format) {
+    size_t const lines = format->r;
+    for (size_t line_idx = 0; line_idx < lines; line_idx += 1) {
+        *(double *)get_format_field(format, line_idx, GD) =
+                get_gen_map_cm(
+                        get_map_p(
+                                get_format_chr(format, line_idx)),
+                        *(uint32_t *)get_format_field(
+                                format,
+                                line_idx,
+                                POS));
+    }
+    return 0;
 }

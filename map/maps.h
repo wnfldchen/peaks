@@ -6,7 +6,9 @@
 #define GREEDYSNPS_MAPS_H
 #include <stdint.h>
 #include "map.h"
-struct Map const * get_map_p(uint8_t i);
-double get_gen_map_cm(struct Map const * map, uint32_t pos);
-double get_gen_map_dist(struct Map const * map, uint32_t a, uint32_t b);
+#include "format.h"
+struct map const * get_map_p(uint8_t i);
+double get_gen_map_cm(struct map const * map, uint32_t pos);
+double get_gen_map_dist(struct map const * map, uint32_t a, uint32_t b);
+int calc_gd(struct format const * format);
 #endif //GREEDYSNPS_MAPS_H

@@ -5,28 +5,19 @@
 #ifndef GREEDYSNPS_HEAP_H
 #define GREEDYSNPS_HEAP_H
 #include <stdint.h>
-struct Node {
-    char * rsid;
-    char * a1;
-    char * a2;
-    double p;
-    double af;
-    double gd;
-    uint32_t pos;
-    uint8_t chr_id;
-    uint8_t nom;
-    char chr[2];
-    char pheno[5];
-    uint8_t flag;
-};
-struct Heap {
-    struct Node * array;
-    uint32_t n;
-};
-extern struct Heap heaps[23];
-void emplace_array(struct Node node);
+#include "format.h"
+
+extern struct heap {
+    struct format * format;
+    size_t * array;
+    size_t len;
+    uint8_t const chr;
+} heaps[23];
+int init_heaps(struct format * format, uint8_t filter);
 void make_heaps();
-struct Node extract_heap(struct Heap * heap);
-void batch_delete_heap(struct Heap * heap);
-void free_node(struct Node const * node);
+size_t extract_heap(struct heap * heap);
+void batch_delete_heap(struct heap * heap);
+int mark_heap_func(struct heap * target, uint8_t func(struct format const *, size_t));
+uint32_t acc_heap_nom(struct heap const * target);
+void print_heap_nonleads(struct heap const * target, FILE * output_file);
 #endif //GREEDYSNPS_HEAP_H

@@ -10,10 +10,9 @@
 #include <alloca.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include "map/maps.h"
-#include "heap/heap.h"
-#include "variant/variant.h"
-#include "exclude/exclude.h"
+#include "maps.h"
+#include "heap.h"
+#include "format.h"
 
 int main(int argc, char ** argv) {
     enum {
@@ -197,128 +196,19 @@ int main(int argc, char ** argv) {
         fputs("Invalid --min-p\n", stderr);
         return EINVAL;
     }
-    char * line = NULL;
-    size_t n = 0;
-    uint8_t skip_header_lines = 1;
-    uint32_t variants_sizes[23] = {0};
-    while (require_variants &&
-           getline(&line, &n, variants_file) != -1) {
-        uint8_t i;
-        if (skip_header_lines) {
-            skip_header_lines -= 1;
-        } else if (line[0] == 'X' || line[1] == 'X') {
-            variants_sizes[0] += 1;
-        } else if (sscanf(line, "%2hhu", &i) != 1 ||
-                   i < 1 || i > 22) {
-            fputs("Invalid variant chr\n", stderr);
-        } else {
-            variants_sizes[i] += 1;
-        }
-    }
-    struct Variant * variants[23] = {0};
-    for (uint8_t i = 0; require_variants && i < 23; i += 1) {
-        variants[i] = calloc(variants_sizes[i], sizeof(struct Variant));
-        if (!variants[i]) {
-            errsv = errno;
-            perror("variants");
-            return errsv;
-        }
-    }
-    if (require_variants) {
-        rewind(variants_file);
-        skip_header_lines = 1;
-    }
-    uint32_t variants_n[23] = {0};
-    while (require_variants &&
-           getline(&line, &n, variants_file) != -1) {
-        struct Variant node = {0};
-        if (skip_header_lines) {
-            skip_header_lines -= 1;
-        } else if (sscanf(line,
-                          "%2c %ms %u %ms %ms %lf",
-                          node.chr,
-                          &node.rsid,
-                          &node.pos,
-                          &node.a1,
-                          &node.a2,
-                          &node.af) != 6) {
-            fputs("Invalid variant line\n", stderr);
-            free_variant(&node);
-        } else {
-            if (node.chr[0] == 'X' || node.chr[1] == 'X') {
-                node.chr_id = 0;
-            } else if (sscanf(node.chr, "%2hhu", &node.chr_id) != 1 ||
-                       node.chr_id < 1 || node.chr_id > 22) {
-                fputs("Invalid variant chr\n", stderr);
-                free_variant(&node);
-                continue;
-            }
-            uint8_t const i = node.chr_id;
-            variants[i][variants_n[i]] = node;
-            variants_n[i] += 1;
-        }
-    }
-    for (uint8_t i = 0; require_variants && i < 23; i += 1) {
-        if (variants_sizes[i] != variants_n[i]) {
-            fputs("variants_size != variants_n\n", stderr);
-        }
-    }
-    uint32_t exclude_sizes[23] = {0};
-    while (exclude_file &&
-           getline(&line, &n, exclude_file) != -1) {
-        uint8_t i;
-        if (line[0] == 'X' || line[1] == 'X') {
-            exclude_sizes[0] += 1;
-        } else if (sscanf(line, "%2hhu", &i) != 1 ||
-                   i < 1 || i > 22) {
-            fputs("Invalid exclude chr\n", stderr);
-        } else {
-            exclude_sizes[i] += 1;
-        }
-    }
-    struct Exclude * exclude[23] = {0};
-    for (uint8_t i = 0; exclude_file && i < 23; i += 1) {
-        exclude[i] = calloc(exclude_sizes[i], sizeof(struct Exclude));
-        if (!exclude[i]) {
-            errsv = errno;
-            perror("exclude");
-            return errsv;
-        }
-    }
-    if (exclude_file) {
-        rewind(exclude_file);
-    }
-    uint32_t exclude_n[23] = {0};
-    while (exclude_file &&
-           getline(&line, &n, exclude_file) != -1) {
-        struct Exclude node = {0};
-        if (sscanf(line,
-                   "%2c_%u_%m[^_]_%m[^_]",
-                   node.chr,
-                   &node.pos,
-                   &node.a1,
-                   &node.a2) != 4) {
-            fputs("Invalid exclude entry\n", stderr);
-            free_exclude(&node);
-        } else {
-            if (node.chr[0] == 'X' || node.chr[1] == 'X') {
-                node.chr_id = 0;
-            } else if (sscanf(node.chr, "%2hhu", &node.chr_id) != 1 ||
-                       node.chr_id < 1 || node.chr_id > 22) {
-                fputs("Invalid exclude chr\n", stderr);
-                free_exclude(&node);
-                continue;
-            }
-            uint8_t const i = node.chr_id;
-            exclude[i][exclude_n[i]] = node;
-            exclude_n[i] += 1;
-        }
-    }
+    struct format * variants_format;
     if (variants_file) {
+        parse_format_string(&variants_format, "crpAaf");
+        read_format_file(variants_format, variants_file, 1, " ");
         fclose(variants_file);
+        parse_format_chr(variants_format, '0');
     }
+    struct format * exclude_format;
     if (exclude_file) {
+        parse_format_string(&exclude_format, "cpAa");
+        read_format_file(exclude_format, exclude_file, 0, "_");
         fclose(exclude_file);
+        parse_format_chr(exclude_format, '0');
     }
     FILE * input_file = NULL;
     FILE * output_file = NULL;
@@ -356,26 +246,11 @@ int main(int argc, char ** argv) {
             break;
         }
     }
-    if (pid) {
-        free(line);
+    if (pid && variants_file) {
+        destroy_format(variants_format);
     }
-    for (uint8_t i = 0;
-         pid && (require_variants || exclude_file) && i < 23;
-         i += 1) {
-        uint32_t const v_n = variants_n[i];
-        uint32_t const e_n = exclude_n[i];
-        if (require_variants) {
-            for (uint32_t j = 0; j < v_n; j += 1) {
-                free_variant(&variants[i][j]);
-            }
-            free(variants[i]);
-        }
-        if (exclude_file) {
-            for (uint32_t j = 0; j < e_n; j += 1) {
-                free_exclude(&exclude[i][j]);
-            }
-            free(exclude[i]);
-        }
+    if (pid && exclude_file) {
+        destroy_format(exclude_format);
     }
     for (int i = 0; pid && i < max_procs; i += 1) {
         wait(NULL);
@@ -383,251 +258,90 @@ int main(int argc, char ** argv) {
     if (pid) {
         return EXIT_SUCCESS;
     }
-    uint32_t exclude_count = 0;
-    uint32_t min_maf_count = 0;
-    uint32_t min_p_count = 0;
-    uint32_t chr_count = 0;
-    uint32_t emplace_count = 0;
-    skip_header_lines = 1;
-    uint32_t heap_sizes[23] = {0};
-    while (getline(&line, &n, input_file) != -1) {
-        char chr[2] = {0};
-        uint8_t i;
-        if (skip_header_lines) {
-            skip_header_lines -= 1;
-        } else if ((table_1_mode &&
-                    sscanf(line, "%2c", chr) != 1)
-                   ||
-                   (!table_1_mode &&
-                    sscanf(line, "%*s %*s %2c", chr) != 1)) {
-            fputs("Invalid input line\n", stderr);
-        } else if (chr[0] == 'X' || chr[1] == 'X') {
-            heap_sizes[0] += 1;
-        } else if (sscanf(chr, "%2hhu", &i) != 1 ||
-                   i < 1 || i > 22) {
-            fputs("Invalid input chr\n", stderr);
-        } else {
-            heap_sizes[i] += 1;
-        }
+    struct format * input_format;
+    parse_format_string(&input_format,
+            table_1_mode ? "crpAas" : "rtcpAas*****n");
+    read_format_file(input_format, input_file, 1, " ");
+    fclose(input_file);
+    parse_format_chr(input_format, '0');
+    if (require_variants) {
+        join_format(input_format, variants_format, "f", 1);
     }
-    for (uint8_t i = 0; i < 23; i += 1) {
-        heaps[i].array = calloc(heap_sizes[i], sizeof(struct Node));
-        if (!heaps[i].array) {
-            errsv = errno;
-            perror("heaps");
-            _exit(errsv);
-        }
+    join_format(input_format, NULL, "d", 1);
+    calc_gd(input_format);
+    if (chromosome != (uint8_t) (-1)) {
+        set_func_chr_chr(chromosome);
+        mark_format_func(input_format, func_chr);
     }
-    rewind(input_file);
-    skip_header_lines = 1;
-    while (getline(&line, &n, input_file) != -1) {
-        struct Node node = {0};
-        if (skip_header_lines) {
-            skip_header_lines -= 1;
-        } else if ((table_1_mode &&
-                    sscanf(line,
-                           "%2c %ms %u %ms %ms %*s %*s %lf",
-                           node.chr,
-                           &node.rsid,
-                           &node.pos,
-                           &node.a1,
-                           &node.a2,
-                           &node.p) != 6)
-                   ||
-                   (!table_1_mode &&
-                    sscanf(line,
-                           "%ms %5c %2c %u %ms %ms %lf %*s %*s %*s %*s %*s %hhu",
-                           &node.rsid,
-                           node.pheno,
-                           node.chr,
-                           &node.pos,
-                           &node.a1,
-                           &node.a2,
-                           &node.p,
-                           &node.nom) != 8)) {
-            fputs("Invalid input line\n", stderr);
-            free_node(&node);
-        } else {
-            if (node.chr[1] == 'X') {
-                node.chr_id = 0;
-            } else if (node.chr[0] == 'X') {
-                node.chr[1] = '\0';
-                node.chr_id = 0;
-            } else if (sscanf(node.chr, "%2hhu", &node.chr_id) != 1 ||
-                       node.chr_id < 1 || node.chr_id > 22) {
-                fputs("Invalid input chr\n", stderr);
-                free_node(&node);
-                continue;
-            }
-            if (exclude_file) {
-                struct Exclude * const excl = exclude[node.chr_id];
-                uint32_t const e_n = exclude_n[node.chr_id];
-                uint32_t l = 0;
-                uint32_t r = e_n;
-                while (l < r) {
-                    uint32_t const m = (l + r) / 2;
-                    uint32_t const m_pos = excl[m].pos;
-                    if (m_pos < node.pos) {
-                        l = m + 1;
-                    } else {
-                        r = m;
-                    }
-                }
-                while (l < e_n && excl[l].pos == node.pos &&
-                       (strcmp(excl[l].a1, node.a1) ||
-                        strcmp(excl[l].a2, node.a2))) {
-                    l += 1;
-                }
-                if (l < e_n && excl[l].pos == node.pos) {
-                    free_node(&node);
-                    if (debug_mode) {
-                        exclude_count += 1;
-                    }
-                    continue;
-                }
-            }
-            if (require_variants) {
-                struct Variant * const vars = variants[node.chr_id];
-                uint32_t const v_n = variants_n[node.chr_id];
-                uint32_t l = 0;
-                uint32_t r = v_n;
-                while (l < r) {
-                    uint32_t const m = (l + r) / 2;
-                    uint32_t const m_pos = vars[m].pos;
-                    if (m_pos < node.pos) {
-                        l = m + 1;
-                    } else {
-                        r = m;
-                    }
-                }
-                while (l < v_n && vars[l].pos == node.pos &&
-                       (strcmp(vars[l].rsid, node.rsid) ||
-                        strcmp(vars[l].a1, node.a1) ||
-                        strcmp(vars[l].a2, node.a2))) {
-                    l += 1;
-                }
-                if (l >= v_n || vars[l].pos != node.pos) {
-                    fputs("Variant not found\n", stderr);
-                    free_node(&node);
-                    continue;
-                }
-                node.af = vars[l].af;
-            }
-            if (table_1_mode) {
-                node.gd = get_gen_map_cm(get_map_p(node.chr_id), node.pos);
-            }
-            if ((!threshold_p || node.p > min_p) &&
-                (!threshold_maf || (node.af > min_maf && node.af < 1.0 - min_maf)) &&
-                (chromosome == (uint8_t) (-1) || node.chr_id == chromosome)) {
-                if (debug_mode) {
-                    emplace_count += 1;
-                }
-                emplace_array(node);
-            } else {
-                if (debug_mode && threshold_p && node.p <= min_p) {
-                    min_p_count += 1;
-                } else if (debug_mode && threshold_maf && (node.af <= min_maf || node.af >= 1.0 - min_maf)) {
-                    min_maf_count += 1;
-                } else if (debug_mode && chromosome != (uint8_t) (-1) && node.chr_id != chromosome) {
-                    chr_count += 1;
-                }
-                free_node(&node);
-            }
-        }
+    if (threshold_maf) {
+        set_func_maf_maf(min_maf);
+        mark_format_func(input_format, func_maf);
     }
-    if (debug_mode) {
-        printf("%u %u %u %u %u\n", exclude_count, min_maf_count, min_p_count, chr_count, emplace_count);
-        fflush(stdout);
+    if (threshold_p) {
+        set_func_p_p(min_p);
+        mark_format_func(input_format, func_p);
     }
+    if (exclude_file) {
+        mark_format(input_format, exclude_format, 1);
+    }
+    init_heaps(input_format, chromosome != (uint8_t) (-1) ||
+                             threshold_maf ||
+                             threshold_p ||
+                             exclude_file ? 1 : 0);
     make_heaps();
     if (table_1_mode) {
-        fputs("chr rsid pos gd a1 a2 maf pval\n", output_file);
+        fputs("chr rsid pos gd a1 a2 maf pval\n",
+                output_file);
     } else {
-        fputs("lead_rsid lead_pheno lead_p-value lead_chr lead_pos cluster_nominal cluster_rsids_phenos\n", output_file);
+        fputs("lead_rsid lead_pheno lead_p-value lead_chr lead_pos cluster_nominal cluster_rsids_phenos\n",
+                output_file);
     }
     for (uint8_t chr = 0; chr < 23; chr += 1) {
-        struct Map const * const map = get_map_p(chr);
-        struct Heap * const heap = &heaps[chr];
-        struct Node * non_leads = NULL;
-        if (!table_1_mode) {
-            non_leads = calloc(heap_sizes[chr], sizeof(struct Node));
-            if (!non_leads) {
-                fputs("Allocation of non_leads failed\n", stderr);
-                continue;
-            }
-        }
-        while (heap->n > 0) {
-            struct Node const lead = extract_heap(heap);
+        struct map const * const map = get_map_p(chr);
+        struct heap * const heap = &heaps[chr];
+        set_func_gd_map(map);
+        while (heap->len > 0) {
+            size_t const lead = extract_heap(heap);
+            double const gd = *(double *)get_format_field(input_format, lead, GD);
             if (table_1_mode) {
+                double const af = *(double *)get_format_field(input_format, lead, AF);
                 fprintf(output_file,
                         "%.2s %s %u %lf %s %s %lf %lf",
-                        lead.chr,
-                        lead.rsid,
-                        lead.pos,
-                        lead.gd,
-                        lead.a1,
-                        lead.a2,
-                        lead.af < 0.5 ? lead.af : 1.0 - lead.af,
-                        lead.p);
+                        *(char **)get_format_field(input_format, lead, CHR),
+                        *(char **)get_format_field(input_format, lead, RSID),
+                        *(uint32_t *)get_format_field(input_format, lead, POS),
+                        gd,
+                        *(char **)get_format_field(input_format, lead, A1),
+                        *(char **)get_format_field(input_format, lead, A2),
+                        af < 0.5 ? af : 1.0 - af,
+                        *(double *)get_format_field(input_format, lead, P));
             } else {
                 fprintf(output_file,
                         "%s %.5s %lf %.2s %u",
-                        lead.rsid,
-                        lead.pheno,
-                        lead.p,
-                        lead.chr,
-                        lead.pos);
+                        *(char **)get_format_field(input_format, lead, RSID),
+                        *(char **)get_format_field(input_format, lead, PHENO),
+                        *(double *)get_format_field(input_format, lead, P),
+                        *(char **)get_format_field(input_format, lead, CHR),
+                        *(uint32_t *)get_format_field(input_format, lead, POS));
             }
-            uint32_t nominal_sum = lead.nom;
-            uint32_t non_leads_n = 0;
-            for (uint32_t i = 0; i < heap->n; i += 1) {
-                if (get_gen_map_dist(map, lead.pos, heap->array[i].pos) < 0.25) {
-                    heap->array[i].flag = 1;
-                    if (table_1_mode) {
-                        free_node(&heap->array[i]);
-                    } else {
-                        nominal_sum += heap->array[i].nom;
-                        non_leads[non_leads_n] = heap->array[i];
-                        non_leads_n += 1;
-                    }
-                }
+            set_func_gd_circle(gd, 0.25);
+            mark_heap_func(heap, func_gd);
+            if (!table_1_mode) {
+                fprintf(output_file, " %u", *(uint32_t *)get_format_field(input_format, lead, NOM)
+                                                   + acc_heap_nom(heap));
+                print_heap_nonleads(heap, output_file);
             }
             batch_delete_heap(heap);
-            if (!table_1_mode) {
-                fprintf(output_file, " %u", nominal_sum);
-            }
-            for (uint32_t i = 0; !table_1_mode && i < non_leads_n; i += 1) {
-                fprintf(output_file,
-                        " %s %.5s",
-                        non_leads[i].rsid,
-                        non_leads[i].pheno);
-                free_node(&non_leads[i]);
-            }
             fputc('\n', output_file);
-            free_node(&lead);
-        }
-        if (!table_1_mode) {
-            free(non_leads);
         }
     }
-    for (uint8_t i = 0; i < 23; i += 1) {
-        free(heaps[i].array);
-        if (require_variants) {
-            uint32_t const v_n = variants_n[i];
-            for (uint32_t j = 0; j < v_n; j += 1) {
-                free_variant(&variants[i][j]);
-            }
-            free(variants[i]);
-        }
-        if (exclude_file) {
-            for (uint32_t j = 0; j < exclude_n[i]; j += 1) {
-                free_exclude(&exclude[i][j]);
-            }
-            free(exclude[i]);
-        }
-    }
-    free(line);
-    fclose(input_file);
     fclose(output_file);
+    destroy_format(input_format);
+    if (exclude_file) {
+        destroy_format(exclude_format);
+    }
+    if (variants_file) {
+        destroy_format(variants_format);
+    }
     _exit(EXIT_SUCCESS);
 }
