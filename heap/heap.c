@@ -203,7 +203,7 @@ void print_heap_nonleads(struct heap const * const target, FILE * const output_f
             fprintf(output_file,
                     " %s %.5s",
                     *(char **)get_format_field(target->format, target->array[line_idx], RSID),
-                    *(char **)get_format_field(target->format, target->array[line_idx], PHENO));
+                    (char *)get_format_field(target->format, target->array[line_idx], PHENO));
         }
     }
 }

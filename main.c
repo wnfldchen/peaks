@@ -287,7 +287,7 @@ int main(int argc, char ** argv) {
     init_heaps(input_format, chromosome != (uint8_t) (-1) ||
                              threshold_maf ||
                              threshold_p ||
-                             exclude_file ? 1 : 0);
+                             exclude_file);
     make_heaps();
     if (table_1_mode) {
         fputs("chr rsid pos gd a1 a2 maf pval\n",
@@ -307,7 +307,7 @@ int main(int argc, char ** argv) {
                 double const af = *(double *)get_format_field(input_format, lead, AF);
                 fprintf(output_file,
                         "%.2s %s %u %lf %s %s %lf %lf",
-                        *(char **)get_format_field(input_format, lead, CHR),
+                        (char *)get_format_field(input_format, lead, CHR),
                         *(char **)get_format_field(input_format, lead, RSID),
                         *(uint32_t *)get_format_field(input_format, lead, POS),
                         gd,
@@ -319,9 +319,9 @@ int main(int argc, char ** argv) {
                 fprintf(output_file,
                         "%s %.5s %lf %.2s %u",
                         *(char **)get_format_field(input_format, lead, RSID),
-                        *(char **)get_format_field(input_format, lead, PHENO),
+                        (char *)get_format_field(input_format, lead, PHENO),
                         *(double *)get_format_field(input_format, lead, P),
-                        *(char **)get_format_field(input_format, lead, CHR),
+                        (char *)get_format_field(input_format, lead, CHR),
                         *(uint32_t *)get_format_field(input_format, lead, POS));
             }
             set_func_gd_circle(gd, 0.25);
