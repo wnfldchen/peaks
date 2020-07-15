@@ -343,6 +343,7 @@ int main(int argc, char ** argv) {
         }
     }
     fclose(output_file);
+    destroy_heaps();
     destroy_format(input_format);
     if (exclude_file) {
         destroy_format(exclude_format);
