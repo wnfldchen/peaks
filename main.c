@@ -24,7 +24,8 @@ int main(int argc, char ** argv) {
         TABLE_1,
         DEBUG,
         MAX_PROCS,
-        EXCLUDE_FILE
+        EXCLUDE_FILE,
+        PAD
     };
     struct option const options[] = {
         {
@@ -81,6 +82,12 @@ int main(int argc, char ** argv) {
             .flag = NULL,
             .val = EXCLUDE_FILE
         },
+        {
+                .name = "pad",
+                .has_arg = no_argument,
+                .flag = NULL,
+                .val = PAD
+        },
         {0}
     };
     char * output_path = NULL;
@@ -88,7 +95,7 @@ int main(int argc, char ** argv) {
     FILE * exclude_file = NULL;
     uint8_t chromosome = (uint8_t) (-1);
     uint8_t table_1_mode = 0;
-    uint8_t debug_mode = 0;
+    uint8_t pad = 0;
     double min_p = 0.0;
     double min_maf = 0.0;
     int max_procs = 1;
@@ -137,9 +144,6 @@ int main(int argc, char ** argv) {
             case TABLE_1:
                 table_1_mode = 1;
                 break;
-            case DEBUG:
-                debug_mode = 1;
-                break;
             case MAX_PROCS:
                 if (sscanf(optarg, "%d", &max_procs) != 1) {
                     errsv = errno;
@@ -154,6 +158,9 @@ int main(int argc, char ** argv) {
                     perror("--exclude-file");
                     return errsv;
                 }
+                break;
+            case PAD:
+                pad = 1;
                 break;
             case '?':
                 fputs("Error parsing arguments\n", stderr);
@@ -201,7 +208,7 @@ int main(int argc, char ** argv) {
         parse_format_string(&variants_format, "crpAaf");
         read_format_file(variants_format, variants_file, 1, " ");
         fclose(variants_file);
-        parse_format_chr(variants_format, '0');
+        parse_format_chr(variants_format, pad ? '0' : '\0');
     }
     struct format * exclude_format;
     if (exclude_file) {
