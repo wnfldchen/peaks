@@ -215,7 +215,7 @@ int main(int argc, char ** argv) {
         parse_format_string(&exclude_format, "cpAa");
         read_format_file(exclude_format, exclude_file, 0, "_");
         fclose(exclude_file);
-        parse_format_chr(exclude_format, '0');
+        parse_format_chr(exclude_format, pad ? '0' : '\0');
     }
     FILE * input_file = NULL;
     FILE * output_file = NULL;
@@ -270,7 +270,7 @@ int main(int argc, char ** argv) {
             table_1_mode ? "crpAas" : "rtcpAas*****n");
     read_format_file(input_format, input_file, 1, " ");
     fclose(input_file);
-    parse_format_chr(input_format, '0');
+    parse_format_chr(input_format, pad ? '0' : '\0');
     if (require_variants) {
         join_format(input_format, variants_format, "f", 1);
     }
