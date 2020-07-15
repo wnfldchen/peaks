@@ -207,8 +207,7 @@ void print_heap_nonleads(struct heap const * const target, FILE * const output_f
 
 void destroy_heaps() {
     for (uint8_t chr = 0; chr < 23; chr += 1) {
-        size_t const len = heaps[chr].len;
-        if (len) {
+        if (heaps[chr].array) {
             free(heaps[chr].array);
         }
     }
