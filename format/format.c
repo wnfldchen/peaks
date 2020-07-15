@@ -360,8 +360,13 @@ void parse_format_chr(struct format * const format, char const pad) {
              line_idx += 1) {
             char * const chr = &s[line_idx * 2];
             uint8_t chr_id;
-            if (chr[1] == 'X') {
+            if (chr[1] == 'X' && pad) {
                 chr_id = 0;
+                chr[0] = pad;
+            } else if (chr[1] == 'X' && !pad) {
+                chr_id = 0;
+                chr[0] = 'X';
+                chr[1] = '\0';
             } else if (chr[0] == 'X' && pad) {
                 chr_id = 0;
                 chr[0] = pad;
