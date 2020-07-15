@@ -74,13 +74,13 @@ void max_heapify(struct heap * const heap, size_t const i) {
     size_t const l = 2 * i + 1;
     size_t const r = 2 * i + 2;
     size_t m = i;
-    double const p_l = *(double *)get_format_field(heap->format, heap->array[l], P);
-    double const p_m = *(double *)get_format_field(heap->format, heap->array[m], P);
-    double const p_r = *(double *)get_format_field(heap->format, heap->array[r], P);
-    if (l < n && p_l > p_m) {
+    double const * const p_l = get_format_field(heap->format, heap->array[l], P);
+    double const * const p_m = get_format_field(heap->format, heap->array[m], P);
+    double const * const p_r = get_format_field(heap->format, heap->array[r], P);
+    if (l < n && *p_l > *p_m) {
         m = l;
     }
-    if (r < n && p_r > p_m) {
+    if (r < n && *p_r > *p_m) {
         m = r;
     }
     if (m != i) {
@@ -109,9 +109,9 @@ void make_heaps() {
 
 void filter_heap(struct heap * const heap, size_t const i) {
     size_t p = (i - 1) / 2;
-    double const p_i = *(double *)get_format_field(heap->format, heap->array[i], P);
-    double const p_p = *(double *)get_format_field(heap->format, heap->array[p], P);
-    if (i > 0 && p_i > p_p) {
+    double const * const p_i = get_format_field(heap->format, heap->array[i], P);
+    double const * const p_p = get_format_field(heap->format, heap->array[p], P);
+    if (i > 0 && *p_i > *p_p) {
         size_t const temp = heap->array[p];
         heap->array[p] = heap->array[i];
         heap->array[i] = temp;
@@ -124,9 +124,9 @@ void delete_heap(struct heap * const heap, size_t const i) {
     if (i < heap->len) {
         heap->array[i] = heap->array[heap->len];
         if (heap->len > 1) {
-            double const p_i = *(double *)get_format_field(heap->format, heap->array[i], P);
-            double const p_ip = *(double *)get_format_field(heap->format, heap->array[(i - 1) / 2], P);
-            if (i == 0 || p_i < p_ip) {
+            double const * const p_i = get_format_field(heap->format, heap->array[i], P);
+            double const * const p_ip = get_format_field(heap->format, heap->array[(i - 1) / 2], P);
+            if (i == 0 || *p_i < *p_ip) {
                 max_heapify(heap, i);
             } else {
                 filter_heap(heap, i);
