@@ -382,6 +382,8 @@ int main(int argc, char ** argv) {
                     }
                 }
             }
+        } else {
+            fputs(" NOT_IN_VARIANTS_FILE", stdout);
         }
         fputc('\n', stdout);
         fflush(stdout);
