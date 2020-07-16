@@ -249,6 +249,7 @@ int main(int argc, char ** argv) {
             if (!input_file) {
                 errsv = errno;
                 perror("input_file");
+                fflush(stderr);
                 _exit(errsv);
             }
             char * const b = basename(argv[i]);
@@ -262,6 +263,7 @@ int main(int argc, char ** argv) {
             if (!output_file) {
                 errsv = errno;
                 perror("output_file");
+                fflush(stderr);
                 _exit(errsv);
             }
             break;
