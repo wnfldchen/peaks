@@ -382,6 +382,7 @@ int main(int argc, char ** argv) {
             }
         }
         fputc('\n', stdout);
+        fflush(stdout);
     }
     destroy_format(input_format);
     if (exclude_file) {
