@@ -45,7 +45,6 @@ uint8_t func_p(struct format const * format, size_t line_idx);
 void set_func_maf_maf(double maf);
 uint8_t func_maf(struct format const * format, size_t line_idx);
 void set_func_gd_circle(double center, double radius);
-void set_func_gd_map(struct map const * map);
 uint8_t func_gd(struct format const * format, size_t line_idx);
 int mark_format_func(struct format * target, uint8_t func(struct format const *, size_t));
 int mark_format(struct format * target, struct format const * source, uint8_t sorted);

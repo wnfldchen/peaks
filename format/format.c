@@ -257,24 +257,14 @@ uint8_t func_maf(struct format const * const format, size_t const line_idx) {
 
 double func_gd_center = 0.0;
 double func_gd_radius = 0.0;
-struct map const * func_gd_map = NULL;
 
 void set_func_gd_circle(double const center, double const radius) {
     func_gd_center = center;
     func_gd_radius = radius;
 }
 
-void set_func_gd_map(struct map const * const map) {
-    func_gd_map = map;
-}
-
 uint8_t func_gd(struct format const * const format, size_t const line_idx) {
-    double const gd = get_gen_map_cm(
-            func_gd_map,
-            *(uint32_t *)get_format_field(
-                    format,
-                    line_idx,
-                    POS));
+    double const gd = *(double *)get_format_field(format, line_idx, GD);
     if (gd > func_gd_center) {
         return gd - func_gd_center < func_gd_radius;
     } else if (gd < func_gd_center) {

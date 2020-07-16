@@ -25,7 +25,8 @@ int main(int argc, char ** argv) {
         DEBUG,
         MAX_PROCS,
         EXCLUDE_FILE,
-        PAD
+        PAD,
+        FIND
     };
     struct option const options[] = {
         {
@@ -88,6 +89,12 @@ int main(int argc, char ** argv) {
                 .flag = NULL,
                 .val = PAD
         },
+        {
+                .name = "find",
+                .has_arg = required_argument,
+                .flag = NULL,
+                .val = FIND
+        },
         {0}
     };
     char * output_path = NULL;
@@ -96,6 +103,7 @@ int main(int argc, char ** argv) {
     uint8_t chromosome = (uint8_t) (-1);
     uint8_t table_1_mode = 0;
     uint8_t pad = 0;
+    char * find = NULL;
     double min_p = 0.0;
     double min_maf = 0.0;
     int max_procs = 1;
@@ -162,6 +170,9 @@ int main(int argc, char ** argv) {
             case PAD:
                 pad = 1;
                 break;
+            case FIND:
+                find = strdupa(optarg);
+                break;
             case '?':
                 fputs("Error parsing arguments\n", stderr);
                 return EINVAL;
@@ -181,7 +192,6 @@ int main(int argc, char ** argv) {
     }
     uint8_t const threshold_maf = min_maf > 0.0;
     uint8_t const threshold_p = min_p > 0.0;
-    uint8_t const require_variants = threshold_maf || table_1_mode;
     uint8_t const filter_chromosome = chromosome != (uint8_t) (-1);
     if (filter_chromosome && chromosome > 22) {
         fputs("Invalid --chromosome\n", stderr);
@@ -197,6 +207,10 @@ int main(int argc, char ** argv) {
     }
     if (table_1_mode && !variants_file) {
         fputs("--table-1 requires --variants-file\n", stderr);
+        return EINVAL;
+    }
+    if (find && !variants_file) {
+        fputs("--find requires --variants-file\n", stderr);
         return EINVAL;
     }
     if (min_p < 0.0) {
@@ -271,7 +285,7 @@ int main(int argc, char ** argv) {
     read_format_file(input_format, input_file, 1, " ");
     fclose(input_file);
     parse_format_chr(input_format, pad ? '0' : '\0');
-    if (require_variants) {
+    if (variants_file) {
         join_format(input_format, variants_format, "f", 1);
     }
     join_format(input_format, NULL, "d", 1);
@@ -306,7 +320,6 @@ int main(int argc, char ** argv) {
     for (uint8_t chr = 0; chr < 23; chr += 1) {
         struct map const * const map = get_map_p(chr);
         struct heap * const heap = &heaps[chr];
-        set_func_gd_map(map);
         while (heap->len > 0) {
             size_t const lead = extract_heap(heap);
             double const gd = *(double *)get_format_field(input_format, lead, GD);
@@ -344,6 +357,32 @@ int main(int argc, char ** argv) {
     }
     fclose(output_file);
     destroy_heaps();
+    if (find) {
+        fputs(find, stdout);
+        size_t find_idx = 0;
+        size_t const find_lines = variants_format->r;
+        while (find_idx < find_lines &&
+               strcmp(find, *(char **)get_format_field(variants_format, find_idx, RSID))) {
+            find_idx += 1;
+        }
+        if (find_idx < find_lines) {
+            double const gd = get_gen_map_cm(
+                    get_map_p(get_format_chr(variants_format, find_idx)),
+                    *(uint32_t *)get_format_field(variants_format, find_idx, POS));
+            size_t const lines = input_format->r;
+            for (size_t line_idx = 0; line_idx < lines; line_idx += 1) {
+                if (!get_format_flag(input_format, line_idx) &&
+                    get_format_chr(variants_format, find_idx) == get_format_chr(input_format, line_idx)) {
+                    double const gd_lead = *(double *)get_format_field(input_format, line_idx, GD);
+                    if ((gd_lead > gd ? gd_lead - gd : gd - gd_lead) < 0.5) {
+                        fputc(' ', stdout);
+                        fputs(*(char **)get_format_field(variants_format, find_idx, RSID), stdout);
+                    }
+                }
+            }
+        }
+        fputc('\n', stdout);
+    }
     destroy_format(input_format);
     if (exclude_file) {
         destroy_format(exclude_format);
