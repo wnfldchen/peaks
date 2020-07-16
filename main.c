@@ -378,7 +378,7 @@ int main(int argc, char ** argv) {
                     double const gd_lead = *(double *)get_format_field(input_format, line_idx, GD);
                     if ((gd_lead > gd ? gd_lead - gd : gd - gd_lead) < 0.5) {
                         fputc(' ', stdout);
-                        fputs(*(char **)get_format_field(variants_format, find_idx, RSID), stdout);
+                        fputs(*(char **)get_format_field(input_format, line_idx, RSID), stdout);
                     }
                 }
             }
