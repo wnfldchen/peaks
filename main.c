@@ -22,7 +22,6 @@ int main(int argc, char ** argv) {
         MIN_MAF,
         VARIANTS_FILE,
         TABLE_1,
-        DEBUG,
         MAX_PROCS,
         EXCLUDE_FILE,
         PAD,
@@ -64,12 +63,6 @@ int main(int argc, char ** argv) {
             .has_arg = no_argument,
             .flag = NULL,
             .val = TABLE_1
-        },
-        {
-            .name = "debug",
-            .has_arg = no_argument,
-            .flag = NULL,
-            .val = DEBUG
         },
         {
             .name = "max-procs",

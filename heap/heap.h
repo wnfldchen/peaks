@@ -2,8 +2,8 @@
 // Created by winfield on 2020-05-12.
 //
 
-#ifndef GREEDYSNPS_HEAP_H
-#define GREEDYSNPS_HEAP_H
+#ifndef PEAKS_HEAP_H
+#define PEAKS_HEAP_H
 #include <stdint.h>
 #include "format.h"
 
@@ -21,4 +21,4 @@ int mark_heap_func(struct heap * target, uint8_t func(struct format const *, siz
 uint32_t acc_heap_nom(struct heap const * target);
 void print_heap_nonleads(struct heap const * target, FILE * output_file);
 void destroy_heaps();
-#endif //GREEDYSNPS_HEAP_H
+#endif //PEAKS_HEAP_H

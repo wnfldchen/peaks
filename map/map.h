@@ -2,8 +2,8 @@
 // Created by winfield on 2020-05-11.
 //
 
-#ifndef GREEDYSNPS_MAP_H
-#define GREEDYSNPS_MAP_H
+#ifndef PEAKS_MAP_H
+#define PEAKS_MAP_H
 #include <stdint.h>
 extern struct map {
     uint32_t const * const position;
@@ -34,4 +34,4 @@ map19,
 map20,
 map21,
 map22;
-#endif //GREEDYSNPS_MAP_H
+#endif //PEAKS_MAP_H

@@ -2,8 +2,8 @@
 // Created by winfield on 2020-06-23.
 //
 
-#ifndef GREEDYSNPS_FORMAT_H
-#define GREEDYSNPS_FORMAT_H
+#ifndef PEAKS_FORMAT_H
+#define PEAKS_FORMAT_H
 #include <stdint.h>
 #include <stdio.h>
 #include "map.h"
@@ -57,4 +57,4 @@ int get_format_type(struct format const * format, uint8_t i);
 void * get_format_field(struct format const * format, size_t line_idx, int t);
 uint8_t get_format_chr(struct format const * format, size_t line_idx);
 char const * print_t(int t);
-#endif //GREEDYSNPS_FORMAT_H
+#endif //PEAKS_FORMAT_H

@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
-project(greedysnps C)
+project(peaks C)
 set(CMAKE_C_STANDARD 11)
-add_executable(greedysnps)
+add_executable(peaks)
 
 target_sources(
-        greedysnps
+        peaks
         PRIVATE
         main.c
         format/format.c
@@ -40,7 +40,7 @@ target_sources(
 )
 
 target_include_directories(
-        greedysnps
+        peaks
         PRIVATE
         format
         heap
