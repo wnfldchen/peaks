@@ -37,6 +37,8 @@ target_sources(
         map/map22.c
         map/maps.c
         map/maps.h
+        options/options.c
+        options/options.h
 )
 
 target_include_directories(
@@ -45,4 +47,5 @@ target_include_directories(
         format
         heap
         map
+        options
 )

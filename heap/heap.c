@@ -1,7 +1,3 @@
-//
-// Created by winfield on 2020-05-12.
-//
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>

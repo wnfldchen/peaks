@@ -1,7 +1,3 @@
-//
-// Created by winfield on 2020-05-11.
-//
-
 #ifndef PEAKS_MAPS_H
 #define PEAKS_MAPS_H
 #include <stdint.h>

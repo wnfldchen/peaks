@@ -1,7 +1,3 @@
-//
-// Created by winfield on 2020-06-23.
-//
-
 #ifndef PEAKS_FORMAT_H
 #define PEAKS_FORMAT_H
 #include <stdint.h>

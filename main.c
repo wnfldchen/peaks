@@ -13,83 +13,9 @@
 #include "maps.h"
 #include "heap.h"
 #include "format.h"
+#include "options.h"
 
 int main(int argc, char ** argv) {
-    enum {
-        OUTPUT_PATH,
-        CHROMOSOME,
-        MIN_P,
-        MIN_MAF,
-        VARIANTS_FILE,
-        TABLE_1,
-        MAX_PROCS,
-        EXCLUDE_FILE,
-        PAD,
-        FIND
-    };
-    struct option const options[] = {
-        {
-            .name = "output-path",
-            .has_arg = required_argument,
-            .flag = NULL,
-            .val = OUTPUT_PATH
-        },
-        {
-            .name = "chromosome",
-            .has_arg = required_argument,
-            .flag = NULL,
-            .val = CHROMOSOME
-        },
-        {
-            .name = "min-p",
-            .has_arg = required_argument,
-            .flag = NULL,
-            .val = MIN_P
-        },
-        {
-            .name = "min-maf",
-            .has_arg = required_argument,
-            .flag = NULL,
-            .val = MIN_MAF
-        },
-        {
-            .name = "variants-file",
-            .has_arg = required_argument,
-            .flag = NULL,
-            .val = VARIANTS_FILE
-        },
-        {
-            .name = "table-1",
-            .has_arg = no_argument,
-            .flag = NULL,
-            .val = TABLE_1
-        },
-        {
-            .name = "max-procs",
-            .has_arg = required_argument,
-            .flag = NULL,
-            .val = MAX_PROCS
-        },
-        {
-            .name = "exclude-file",
-            .has_arg = required_argument,
-            .flag = NULL,
-            .val = EXCLUDE_FILE
-        },
-        {
-                .name = "pad",
-                .has_arg = no_argument,
-                .flag = NULL,
-                .val = PAD
-        },
-        {
-                .name = "find",
-                .has_arg = required_argument,
-                .flag = NULL,
-                .val = FIND
-        },
-        {0}
-    };
     char * output_path = NULL;
     FILE * variants_file = NULL;
     FILE * exclude_file = NULL;

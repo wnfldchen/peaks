@@ -1,7 +1,3 @@
-//
-// Created by winfield on 2020-05-11.
-//
-
 #include <stdint.h>
 #include "format.h"
 #include "map.h"

@@ -1,7 +1,3 @@
-//
-// Created by winfield on 2020-05-12.
-//
-
 #ifndef PEAKS_HEAP_H
 #define PEAKS_HEAP_H
 #include <stdint.h>
@@ -12,7 +8,7 @@ extern struct heap {
     size_t * array;
     size_t len;
     uint8_t const chr;
-} heaps[23];
+} heaps[];
 int init_heaps(struct format * format, uint8_t filter);
 void make_heaps();
 size_t extract_heap(struct heap * heap);
