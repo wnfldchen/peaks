@@ -44,7 +44,6 @@ The output should be identical to `../big40/Table2fmg.txt`.
 Recreate `../big40/Table2X.txt` as in the second example.
 Use the downloaded variants file to match `rs5955807` from the Fisher clusters against the output clusters.
 In addition to the output file as before, the standard output prints two successful matches:
-
 ```
 rs5955807 rs146090761 rs139593778
 ```
