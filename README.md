@@ -2,12 +2,16 @@ The peaks software repository
 
 # Build
 
+CMake 3.16 or higher is required.
+
 ```
 mkdir cmake-build-debug
 cd cmake-build-debug
 cmake -DCMAKE_BUILD_TYPE=Debug ..
 make
 ```
+Gives a debug build. Similarly, the release build can use
+folder `cmake-build-release` and option `-DCMAKE_BUILD_TYPE=Release`.
 
 # Usage
 
