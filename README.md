@@ -1,4 +1,8 @@
-The peaks software repository
+peaks. Copyright (c) 2020. Winfield Chen.
+
+The peaks software repository, implementing the cluster identification methods described in *Enhanced brain imaging genetics in UK Biobank*. Operating on summary statistics for many phenotypes, this work clusters lead associations into phenotype/genetic variant pairs that are close together in genetic distance, registering hits across phenotypes into a set of clusters. This work is released under the BSD 2-clause license. If you use this software, please cite *S.M. Smith, G. Douaud, W. Chen, T. Hanayik, F. Alfaro-Almagro, K. Sharp and L.T. Elliott. Enhanced brain imaging genetics in UK Biobank. 2020. biorxiv preprint 10.1101/2020.07.27.223545v1*
+
+Genetic distances are computed using the recombination maps provided by the 1,000 Genomes Project, Phase 3 (The 1000 Genomes Project Consortium, 2015). Positions of genetic variants must be recorded in GRCh37/hg19 coordinates.
 
 # Build
 
@@ -36,11 +40,11 @@ The output is as before except filtered to only the X chromosome.
 The output should be identical to `../big40/Table2X.txt`.
 
 ```
-./peaks --output-path . ../big40/Table1fmg.txt
+./peaks --output-path . ../big40/Table1fm.txt
 ```
 The output is the clusters in the Fisher hits.
 The lead rsid of the last cluster should be `rs5955807` with associated phenotype `V1991`.
-The output should be identical to `../big40/Table2fmg.txt`.
+The output should be identical to `../big40/Table2fm.txt`.
 
 ```
 ./peaks --output-path . --find rs5955807 --variants-file ~/Downloads/variants.txt --chromosome X ../big40/Table1.txt

@@ -1,3 +1,5 @@
+// peaks. Copyright (c) 2020. Winfield Chen.
+
 #ifndef PEAKS_MAPS_H
 #define PEAKS_MAPS_H
 #include <stdint.h>

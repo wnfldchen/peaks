@@ -1,3 +1,5 @@
+// peaks. Copyright (c) 2020. Winfield Chen.
+
 #ifndef PEAKS_HEAP_H
 #define PEAKS_HEAP_H
 #include <stdint.h>

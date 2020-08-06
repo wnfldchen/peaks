@@ -1,3 +1,5 @@
+// peaks. Copyright (c) 2020. Winfield Chen.
+
 #include <stddef.h>
 #include <getopt.h>
 #include "options.h"

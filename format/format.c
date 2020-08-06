@@ -1,3 +1,5 @@
+// peaks. Copyright (c) 2020. Winfield Chen.
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>

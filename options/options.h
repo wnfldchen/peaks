@@ -1,3 +1,5 @@
+// peaks. Copyright (c) 2020. Winfield Chen.
+
 #ifndef PEAKS_OPTIONS_H
 #define PEAKS_OPTIONS_H
 #include <getopt.h>

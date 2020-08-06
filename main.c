@@ -1,3 +1,5 @@
+// peaks. Copyright (c) 2020. Winfield Chen.
+
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stddef.h>

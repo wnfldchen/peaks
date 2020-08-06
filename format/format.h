@@ -1,3 +1,5 @@
+// peaks. Copyright (c) 2020. Winfield Chen.
+
 #ifndef PEAKS_FORMAT_H
 #define PEAKS_FORMAT_H
 #include <stdint.h>
