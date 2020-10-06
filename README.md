@@ -59,6 +59,9 @@ rs5955807 rs146090761 rs139593778
 The first field is the query itself (`rs5955807`), which is followed by a space-separated list of matching
 output clusters (`rs146090761 rs139593778`). If there are no matches, the list is empty.
 If the query is not in the variants file, the list is replaced with the error message `NOT_IN_VARIANTS_FILE`.
+If the find file containing the query rows has a second column storing positions,
+then the variants file is not necessary. If the flag `--find-rep` is set, the search is limited to reproducing clusters
+only (clusters where cluster nominal is greater than zero).
 
 # More options
 

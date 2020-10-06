@@ -25,6 +25,7 @@ int main(int argc, char ** argv) {
     uint8_t chromosome = (uint8_t) (-1);
     uint8_t table_1_mode = 0;
     uint8_t pad = 0;
+    uint8_t find_rep = 0;
     double min_p = 0.0;
     double min_maf = 0.0;
     int max_procs = 1;
@@ -98,6 +99,9 @@ int main(int argc, char ** argv) {
                     perror("--find-file");
                     return errsv;
                 }
+                break;
+            case FIND_REP:
+                find_rep = 1;
                 break;
             case '?':
                 fputs("Error parsing arguments\n", stderr);
@@ -271,8 +275,10 @@ int main(int argc, char ** argv) {
             set_func_gd_circle(gd, 0.25);
             mark_heap_func(heap, func_gd);
             if (!table_1_mode) {
-                fprintf(output_file, " %u", *(uint32_t *)get_format_field(input_format, lead, NOM)
-                                                   + acc_heap_nom(heap));
+                uint32_t * const nom_field = get_format_field(input_format, lead, NOM);
+                uint32_t const nom = *nom_field + acc_heap_nom(heap);
+                *nom_field = nom;
+                fprintf(output_file, " %u", nom);
                 print_heap_nonleads(heap, output_file);
             }
             batch_delete_heap(heap);
@@ -294,7 +300,8 @@ int main(int argc, char ** argv) {
                 size_t const lines = input_format->r;
                 for (size_t line_idx = 0; line_idx < lines; line_idx += 1) {
                     if (!get_format_flag(input_format, line_idx) &&
-                        get_format_chr(input_format, line_idx) == chromosome) {
+                        get_format_chr(input_format, line_idx) == chromosome &&
+                        (!find_rep || *(uint32_t *)get_format_field(input_format, line_idx, NOM))) {
                         double const gd_lead = *(double *)get_format_field(input_format, line_idx, GD);
                         if ((gd_lead > gd ? gd_lead - gd : gd - gd_lead) < 0.5) {
                             fputc(' ', stdout);
@@ -320,7 +327,8 @@ int main(int argc, char ** argv) {
                     size_t const lines = input_format->r;
                     for (size_t line_idx = 0; line_idx < lines; line_idx += 1) {
                         if (!get_format_flag(input_format, line_idx) &&
-                            get_format_chr(variants_format, find_idx) == get_format_chr(input_format, line_idx)) {
+                            get_format_chr(variants_format, find_idx) == get_format_chr(input_format, line_idx) &&
+                            (!find_rep || *(uint32_t *)get_format_field(input_format, line_idx, NOM))) {
                             double const gd_lead = *(double *)get_format_field(input_format, line_idx, GD);
                             if ((gd_lead > gd ? gd_lead - gd : gd - gd_lead) < 0.5) {
                                 fputc(' ', stdout);

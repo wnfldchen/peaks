@@ -13,7 +13,8 @@ enum {
     MAX_PROCS,
     EXCLUDE_FILE,
     PAD,
-    FIND_FILE
+    FIND_FILE,
+    FIND_REP
 };
 extern struct option const options[];
 #endif //PEAKS_OPTIONS_H
