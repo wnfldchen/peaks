@@ -135,10 +135,6 @@ int main(int argc, char ** argv) {
         fputs("--table-1 requires --variants-file\n", stderr);
         return EINVAL;
     }
-    if (find_file && !variants_file) {
-        fputs("--find requires --variants-file\n", stderr);
-        return EINVAL;
-    }
     if (min_p < 0.0) {
         fputs("Invalid --min-p\n", stderr);
         return EINVAL;
@@ -307,6 +303,10 @@ int main(int argc, char ** argv) {
                     }
                 }
             } else {
+                if (!variants_file) {
+                    fputs("--find-file without position field requires --variants-file\n", stderr);
+                    return EINVAL;
+                }
                 size_t find_idx = 0;
                 size_t const find_lines = variants_format->r;
                 while (find_idx < find_lines &&
