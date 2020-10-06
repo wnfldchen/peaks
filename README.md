@@ -47,7 +47,8 @@ The lead rsid of the last cluster should be `rs5955807` with associated phenotyp
 The output should be identical to `../big40/Table2fm.txt`.
 
 ```
-./peaks --output-path . --find rs5955807 --variants-file ~/Downloads/variants.txt --chromosome X ../big40/Table1.txt
+echo "rs5955807" > find.txt
+./peaks --output-path . --find-file find.txt --variants-file ~/Downloads/variants.txt --chromosome X ../big40/Table1.txt
 ```
 Recreate `../big40/Table2X.txt` as in the second example.
 Use the downloaded variants file to match `rs5955807` from the Fisher clusters against the output clusters.

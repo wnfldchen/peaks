@@ -60,10 +60,10 @@ struct option const options[] = {
                 .val = PAD
         },
         {
-                .name = "find",
+                .name = "find-file",
                 .has_arg = required_argument,
                 .flag = NULL,
-                .val = FIND
+                .val = FIND_FILE
         },
         {0}
 };

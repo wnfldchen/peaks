@@ -21,10 +21,10 @@ int main(int argc, char ** argv) {
     char * output_path = NULL;
     FILE * variants_file = NULL;
     FILE * exclude_file = NULL;
+    FILE * find_file = NULL;
     uint8_t chromosome = (uint8_t) (-1);
     uint8_t table_1_mode = 0;
     uint8_t pad = 0;
-    char * find = NULL;
     double min_p = 0.0;
     double min_maf = 0.0;
     int max_procs = 1;
@@ -91,8 +91,13 @@ int main(int argc, char ** argv) {
             case PAD:
                 pad = 1;
                 break;
-            case FIND:
-                find = strdupa(optarg);
+            case FIND_FILE:
+                find_file = fopen(optarg, "r");
+                if (!find_file) {
+                    errsv = errno;
+                    perror("--find-file");
+                    return errsv;
+                }
                 break;
             case '?':
                 fputs("Error parsing arguments\n", stderr);
@@ -130,7 +135,7 @@ int main(int argc, char ** argv) {
         fputs("--table-1 requires --variants-file\n", stderr);
         return EINVAL;
     }
-    if (find && !variants_file) {
+    if (find_file && !variants_file) {
         fputs("--find requires --variants-file\n", stderr);
         return EINVAL;
     }
@@ -280,34 +285,41 @@ int main(int argc, char ** argv) {
     }
     fclose(output_file);
     destroy_heaps();
-    if (find) {
-        fputs(find, stdout);
-        size_t find_idx = 0;
-        size_t const find_lines = variants_format->r;
-        while (find_idx < find_lines &&
-               strcmp(find, *(char **)get_format_field(variants_format, find_idx, RSID))) {
-            find_idx += 1;
-        }
-        if (find_idx < find_lines) {
-            double const gd = get_gen_map_cm(
-                    get_map_p(get_format_chr(variants_format, find_idx)),
-                    *(uint32_t *)get_format_field(variants_format, find_idx, POS));
-            size_t const lines = input_format->r;
-            for (size_t line_idx = 0; line_idx < lines; line_idx += 1) {
-                if (!get_format_flag(input_format, line_idx) &&
-                    get_format_chr(variants_format, find_idx) == get_format_chr(input_format, line_idx)) {
-                    double const gd_lead = *(double *)get_format_field(input_format, line_idx, GD);
-                    if ((gd_lead > gd ? gd_lead - gd : gd - gd_lead) < 0.5) {
-                        fputc(' ', stdout);
-                        fputs(*(char **)get_format_field(input_format, line_idx, RSID), stdout);
+    if (find_file) {
+        char * line = NULL;
+        size_t n = 0;
+        while (getline(&line, &n, find_file) != -1) {
+            char * find = strtok(line, "\n");
+            fputs(find, stdout);
+            size_t find_idx = 0;
+            size_t const find_lines = variants_format->r;
+            while (find_idx < find_lines &&
+                   strcmp(find, *(char **)get_format_field(variants_format, find_idx, RSID))) {
+                find_idx += 1;
+            }
+            if (find_idx < find_lines) {
+                double const gd = get_gen_map_cm(
+                        get_map_p(get_format_chr(variants_format, find_idx)),
+                        *(uint32_t *)get_format_field(variants_format, find_idx, POS));
+                size_t const lines = input_format->r;
+                for (size_t line_idx = 0; line_idx < lines; line_idx += 1) {
+                    if (!get_format_flag(input_format, line_idx) &&
+                        get_format_chr(variants_format, find_idx) == get_format_chr(input_format, line_idx)) {
+                        double const gd_lead = *(double *)get_format_field(input_format, line_idx, GD);
+                        if ((gd_lead > gd ? gd_lead - gd : gd - gd_lead) < 0.5) {
+                            fputc(' ', stdout);
+                            fputs(*(char **)get_format_field(input_format, line_idx, RSID), stdout);
+                        }
                     }
                 }
+            } else {
+                fputs(" NOT_IN_VARIANTS_FILE", stdout);
             }
-        } else {
-            fputs(" NOT_IN_VARIANTS_FILE", stdout);
+            fputc('\n', stdout);
         }
-        fputc('\n', stdout);
         fflush(stdout);
+        free(line);
+        fclose(find_file);
     }
     destroy_format(input_format);
     if (exclude_file) {
