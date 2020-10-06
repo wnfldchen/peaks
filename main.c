@@ -289,22 +289,16 @@ int main(int argc, char ** argv) {
         char * line = NULL;
         size_t n = 0;
         while (getline(&line, &n, find_file) != -1) {
-            char * find = strtok(line, "\n");
+            char const * const find = strtok(line, " \n");
             fputs(find, stdout);
-            size_t find_idx = 0;
-            size_t const find_lines = variants_format->r;
-            while (find_idx < find_lines &&
-                   strcmp(find, *(char **)get_format_field(variants_format, find_idx, RSID))) {
-                find_idx += 1;
-            }
-            if (find_idx < find_lines) {
-                double const gd = get_gen_map_cm(
-                        get_map_p(get_format_chr(variants_format, find_idx)),
-                        *(uint32_t *)get_format_field(variants_format, find_idx, POS));
+            char const * const find_pos_s = strtok(NULL, " \n");
+            uint32_t find_pos = (uint32_t) (-1);
+            if (find_pos_s && sscanf(find_pos_s, "%u", &find_pos) == 1 && find_pos != (uint32_t) (-1)) {
+                double const gd = get_gen_map_cm(get_map_p(chromosome), find_pos);
                 size_t const lines = input_format->r;
                 for (size_t line_idx = 0; line_idx < lines; line_idx += 1) {
                     if (!get_format_flag(input_format, line_idx) &&
-                        get_format_chr(variants_format, find_idx) == get_format_chr(input_format, line_idx)) {
+                        get_format_chr(input_format, line_idx) == chromosome) {
                         double const gd_lead = *(double *)get_format_field(input_format, line_idx, GD);
                         if ((gd_lead > gd ? gd_lead - gd : gd - gd_lead) < 0.5) {
                             fputc(' ', stdout);
@@ -313,7 +307,30 @@ int main(int argc, char ** argv) {
                     }
                 }
             } else {
-                fputs(" NOT_IN_VARIANTS_FILE", stdout);
+                size_t find_idx = 0;
+                size_t const find_lines = variants_format->r;
+                while (find_idx < find_lines &&
+                       strcmp(find, *(char **)get_format_field(variants_format, find_idx, RSID))) {
+                    find_idx += 1;
+                }
+                if (find_idx < find_lines) {
+                    double const gd = get_gen_map_cm(
+                            get_map_p(get_format_chr(variants_format, find_idx)),
+                            *(uint32_t *)get_format_field(variants_format, find_idx, POS));
+                    size_t const lines = input_format->r;
+                    for (size_t line_idx = 0; line_idx < lines; line_idx += 1) {
+                        if (!get_format_flag(input_format, line_idx) &&
+                            get_format_chr(variants_format, find_idx) == get_format_chr(input_format, line_idx)) {
+                            double const gd_lead = *(double *)get_format_field(input_format, line_idx, GD);
+                            if ((gd_lead > gd ? gd_lead - gd : gd - gd_lead) < 0.5) {
+                                fputc(' ', stdout);
+                                fputs(*(char **)get_format_field(input_format, line_idx, RSID), stdout);
+                            }
+                        }
+                    }
+                } else {
+                    fputs(" NOT_IN_VARIANTS_FILE", stdout);
+                }
             }
             fputc('\n', stdout);
         }
