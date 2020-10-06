@@ -59,9 +59,51 @@ rs5955807 rs146090761 rs139593778
 The first field is the query itself (`rs5955807`), which is followed by a space-separated list of matching
 output clusters (`rs146090761 rs139593778`). If there are no matches, the list is empty.
 If the query is not in the variants file, the list is replaced with the error message `NOT_IN_VARIANTS_FILE`.
+```
+$ cat find.txt
+rs61784835 47974123
+rs11205734 51020967
+rs74080735 51610533
+rs12565436 67161638
+rs76934732 76013268
+rs1413429 86895314
+rs2365715 156615114
+rs1609829 180909061
+rs1044595 180943529
+rs823152 205736285
+```
 If the find file containing the query rows has a second column storing positions,
-then the variants file is not necessary. If the flag `--find-rep` is set, the search is limited to reproducing clusters
+then the variants file is not necessary.
+The processing without the variants file will be significantly faster.
+```
+$ ./peaks --output-path . --find-file find.txt --chromosome 1 ../big40/Table1.txt
+rs61784835 rs61784835
+rs11205734 1:51566847_GAAAAAAA_G
+rs74080735 1:51566847_GAAAAAAA_G
+rs12565436
+rs76934732 rs75726608
+rs1413429
+rs2365715 rs2365715
+rs1609829 rs78904023 rs35306826
+rs1044595 rs78904023 rs35306826
+rs823152 rs1772143 rs7418300
+```
+If the flag `--find-rep` is set, the search is limited to replicating clusters
 only (clusters where cluster nominal is greater than zero).
+```
+$ ./peaks --output-path . --find-file find.txt --find-rep --chromosome 1 ../big40/Table1.txt
+rs61784835 rs61784835
+rs11205734 1:51566847_GAAAAAAA_G
+rs74080735 1:51566847_GAAAAAAA_G
+rs12565436
+rs76934732 rs75726608
+rs1413429
+rs2365715 rs2365715
+rs1609829 rs35306826
+rs1044595 rs35306826
+rs823152 rs1772143 rs7418300
+```
+Notice in the example how `rs78904023` does not appear when `--find-rep` is set because it did not replicate.
 
 # More options
 
