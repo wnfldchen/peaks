@@ -14,7 +14,8 @@ enum {
     EXCLUDE_FILE,
     PAD,
     FIND_FILE,
-    FIND_REP
+    FIND_REP,
+    FIND_REV
 };
 extern struct option const options[];
 #endif //PEAKS_OPTIONS_H

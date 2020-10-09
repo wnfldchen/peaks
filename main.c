@@ -26,6 +26,7 @@ int main(int argc, char ** argv) {
     uint8_t table_1_mode = 0;
     uint8_t pad = 0;
     uint8_t find_rep = 0;
+    uint8_t find_rev = 0;
     double min_p = 0.0;
     double min_maf = 0.0;
     int max_procs = 1;
@@ -102,6 +103,9 @@ int main(int argc, char ** argv) {
                 break;
             case FIND_REP:
                 find_rep = 1;
+                break;
+            case FIND_REV:
+                find_rev = 1;
                 break;
             case '?':
                 fputs("Error parsing arguments\n", stderr);
@@ -288,6 +292,20 @@ int main(int argc, char ** argv) {
     fclose(output_file);
     destroy_heaps();
     if (find_file) {
+        size_t const lines = input_format->r;
+        uint8_t * find_rev_counts = NULL;
+        if (find_rev) {
+            if (chromosome == (uint8_t) (-1)) {
+                fputs("--find-rev requires --chromosome\n", stderr);
+                return EINVAL;
+            }
+            find_rev_counts = calloc(lines, sizeof(uint8_t));
+            if (!find_rev_counts) {
+                errsv = errno;
+                perror("find_rev_counts");
+                _exit(errsv);
+            }
+        }
         char * line = NULL;
         size_t n = 0;
         while (getline(&line, &n, find_file) != -1) {
@@ -296,14 +314,20 @@ int main(int argc, char ** argv) {
             char const * const find_pos_s = strtok(NULL, " \n");
             uint32_t find_pos = (uint32_t) (-1);
             if (find_pos_s && sscanf(find_pos_s, "%u", &find_pos) == 1 && find_pos != (uint32_t) (-1)) {
+                if (chromosome == (uint8_t) (-1)) {
+                    fputs("--find-file with position field requires --chromosome\n", stderr);
+                    return EINVAL;
+                }
                 double const gd = get_gen_map_cm(get_map_p(chromosome), find_pos);
-                size_t const lines = input_format->r;
                 for (size_t line_idx = 0; line_idx < lines; line_idx += 1) {
                     if (!get_format_flag(input_format, line_idx) &&
                         get_format_chr(input_format, line_idx) == chromosome &&
                         (!find_rep || *(uint32_t *)get_format_field(input_format, line_idx, NOM))) {
                         double const gd_lead = *(double *)get_format_field(input_format, line_idx, GD);
                         if ((gd_lead > gd ? gd_lead - gd : gd - gd_lead) < 0.5) {
+                            if (find_rev) {
+                                find_rev_counts[line_idx] = 1;
+                            }
                             fputc(' ', stdout);
                             fputs(*(char **)get_format_field(input_format, line_idx, RSID), stdout);
                         }
@@ -324,13 +348,15 @@ int main(int argc, char ** argv) {
                     double const gd = get_gen_map_cm(
                             get_map_p(get_format_chr(variants_format, find_idx)),
                             *(uint32_t *)get_format_field(variants_format, find_idx, POS));
-                    size_t const lines = input_format->r;
                     for (size_t line_idx = 0; line_idx < lines; line_idx += 1) {
                         if (!get_format_flag(input_format, line_idx) &&
                             get_format_chr(variants_format, find_idx) == get_format_chr(input_format, line_idx) &&
                             (!find_rep || *(uint32_t *)get_format_field(input_format, line_idx, NOM))) {
                             double const gd_lead = *(double *)get_format_field(input_format, line_idx, GD);
                             if ((gd_lead > gd ? gd_lead - gd : gd - gd_lead) < 0.5) {
+                                if (find_rev) {
+                                    find_rev_counts[line_idx] = 1;
+                                }
                                 fputc(' ', stdout);
                                 fputs(*(char **)get_format_field(input_format, line_idx, RSID), stdout);
                             }
@@ -341,6 +367,20 @@ int main(int argc, char ** argv) {
                 }
             }
             fputc('\n', stdout);
+        }
+        if (find_rev) {
+            fputc('\n', stdout);
+            for (size_t line_idx = 0; line_idx < lines; line_idx += 1) {
+                if (!get_format_flag(input_format, line_idx) &&
+                    get_format_chr(input_format, line_idx) == chromosome &&
+                    (!find_rep || *(uint32_t *)get_format_field(input_format, line_idx, NOM))) {
+                    if (!find_rev_counts[line_idx]) {
+                        fputs(*(char **)get_format_field(input_format, line_idx, RSID), stdout);
+                        fputc('\n', stdout);
+                    }
+                }
+            }
+            free(find_rev_counts);
         }
         fflush(stdout);
         free(line);

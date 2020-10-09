@@ -71,5 +71,11 @@ struct option const options[] = {
                 .flag = NULL,
                 .val = FIND_REP
         },
+        {
+                .name = "find-rev",
+                .has_arg = no_argument,
+                .flag = NULL,
+                .val = FIND_REV
+        },
         {0}
 };

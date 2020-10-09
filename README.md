@@ -73,7 +73,7 @@ rs1044595 180943529
 rs823152 205736285
 ```
 If the find file containing the query rows has a second column storing positions,
-then the variants file is not necessary.
+then the variants file is not necessary, but specifying the chromosome which all the queries are in is required.
 The processing without the variants file will be significantly faster.
 ```
 $ ./peaks --output-path . --find-file find.txt --chromosome 1 ../big40/Table1.txt
@@ -104,6 +104,8 @@ rs1044595 rs35306826
 rs823152 rs1772143 rs7418300
 ```
 Notice in the example how `rs78904023` does not appear when `--find-rep` is set because it did not replicate.
+If the flag `--find-rev` is set, the search will also output the clusters which did not match any query and
+also requires the chromosome which all the queries are in to be specified.
 
 # More options
 
