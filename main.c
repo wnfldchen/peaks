@@ -297,7 +297,7 @@ int main(int argc, char ** argv) {
         if (find_rev) {
             if (chromosome == (uint8_t) (-1)) {
                 fputs("--find-rev requires --chromosome\n", stderr);
-                return EINVAL;
+                _exit(EINVAL);
             }
             find_rev_counts = calloc(lines, sizeof(uint8_t));
             if (!find_rev_counts) {
@@ -316,7 +316,7 @@ int main(int argc, char ** argv) {
             if (find_pos_s && sscanf(find_pos_s, "%u", &find_pos) == 1 && find_pos != (uint32_t) (-1)) {
                 if (chromosome == (uint8_t) (-1)) {
                     fputs("--find-file with position field requires --chromosome\n", stderr);
-                    return EINVAL;
+                    _exit(EINVAL);
                 }
                 double const gd = get_gen_map_cm(get_map_p(chromosome), find_pos);
                 for (size_t line_idx = 0; line_idx < lines; line_idx += 1) {
@@ -336,7 +336,7 @@ int main(int argc, char ** argv) {
             } else {
                 if (!variants_file) {
                     fputs("--find-file without position field requires --variants-file\n", stderr);
-                    return EINVAL;
+                    _exit(EINVAL);
                 }
                 size_t find_idx = 0;
                 size_t const find_lines = variants_format->r;
