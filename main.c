@@ -27,6 +27,7 @@ int main(int argc, char ** argv) {
     uint8_t pad = 0;
     uint8_t find_rep = 0;
     uint8_t find_rev = 0;
+    uint8_t skip = 0;
     double min_p = 0.0;
     double min_maf = 0.0;
     int max_procs = 1;
@@ -106,6 +107,9 @@ int main(int argc, char ** argv) {
                 break;
             case FIND_REV:
                 find_rev = 1;
+                break;
+            case SKIP:
+                skip = 1;
                 break;
             case '?':
                 fputs("Error parsing arguments\n", stderr);
@@ -276,16 +280,24 @@ int main(int argc, char ** argv) {
                         (char *)get_format_field(input_format, lead, CHR),
                         *(uint32_t *)get_format_field(input_format, lead, POS));
             }
-            set_func_gd_circle(gd, 0.25);
-            mark_heap_func(heap, func_gd);
+            if (!skip) {
+                set_func_gd_circle(gd, 0.25);
+                mark_heap_func(heap, func_gd);
+            }
             if (!table_1_mode) {
                 uint32_t * const nom_field = get_format_field(input_format, lead, NOM);
-                uint32_t const nom = *nom_field + acc_heap_nom(heap);
-                *nom_field = nom;
-                fprintf(output_file, " %u", nom);
-                print_heap_nonleads(heap, output_file);
+                if (!skip) {
+                    uint32_t const nom = *nom_field + acc_heap_nom(heap);
+                    *nom_field = nom;
+                    fprintf(output_file, " %u", nom);
+                    print_heap_nonleads(heap, output_file);
+                } else {
+                    fprintf(output_file, " %u", *nom_field);
+                }
             }
-            batch_delete_heap(heap);
+            if (!skip) {
+                batch_delete_heap(heap);
+            }
             fputc('\n', output_file);
         }
     }

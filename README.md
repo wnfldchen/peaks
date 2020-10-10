@@ -147,3 +147,8 @@ Exclude all entries in the exclude file.
 --pad
 ```
 Pad input chromosome field value `X` into `0X` before output.
+
+```
+--skip
+```
+Skip clustering stage

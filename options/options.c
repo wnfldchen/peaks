@@ -77,5 +77,11 @@ struct option const options[] = {
                 .flag = NULL,
                 .val = FIND_REV
         },
+        {
+                .name = "skip",
+                .has_arg = no_argument,
+                .flag = NULL,
+                .val = SKIP
+        },
         {0}
 };
