@@ -113,7 +113,12 @@ int main(int argc, char ** argv) {
                 skip = 1;
                 break;
             case MAP_FILE:
-                // TODO
+                map_file = fopen(optarg, "r");
+                if (!map_file) {
+                    errsv = errno;
+                    perror("--map-file");
+                    return errsv;
+                }
                 break;
             case '?':
                 fputs("Error parsing arguments\n", stderr);
