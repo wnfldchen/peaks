@@ -1,6 +1,6 @@
 peaks. Copyright (c) 2020. Winfield Chen.
 
-The peaks software repository, implementing the cluster identification methods described in *Enhanced brain imaging genetics in UK Biobank*. Operating on summary statistics for many phenotypes, this work clusters lead associations into phenotype/genetic variant pairs that are close together in genetic distance, registering hits across phenotypes into a set of clusters. This work is released under the BSD 2-clause license. If you use this software, please cite *S.M. Smith, G. Douaud, W. Chen, T. Hanayik, F. Alfaro-Almagro, K. Sharp and L.T. Elliott. Enhanced brain imaging genetics in UK Biobank. 2020. biorxiv preprint 10.1101/2020.07.27.223545v1*
+The peaks software repository, implementing the cluster identification methods described in *An expanded set of genome-wide association studies of brain imaging phenotypes in UK Biobank*. Operating on summary statistics for many phenotypes, this work clusters lead associations into phenotype/genetic variant pairs that are close together in genetic distance, registering hits across phenotypes into a set of clusters. This work is released under the BSD 2-clause license. If you use this software, please cite *Smith, S.M., Douaud, G., Chen, W., Hanayik, T., Alfaro-Almagro, F., Sharp, K., Elliott, L.T. An expanded set of genome-wide association studies of brain imaging phenotypes in UK Biobank. Nat Neurosci 24, 737–745 (2021)*.
 
 Genetic distances are computed using the recombination maps provided by the 1,000 Genomes Project, Phase 3 (The 1000 Genomes Project Consortium, 2015). Positions of genetic variants must be recorded in GRCh37/hg19 coordinates.
 
@@ -30,7 +30,7 @@ peaks --output-path DIRECTORY [OPTIONS] INPUT_FILE_1 [INPUT_FILE_2 ...]
 ```
 The output file has the same file name as the input file but in the output directory.
 File `./Table1.txt` now contains the clusters in `../big40/Table1.txt` according to the
-algorithm described in the paper "Enhanced Brain Imaging Genetics in UK Biobank."
+algorithm described in the paper "An expanded set of genome-wide association studies of brain imaging phenotypes in UK Biobank."
 The output should be identical to `../big40/Table2.txt`.
 
 ```
