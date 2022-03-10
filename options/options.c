@@ -83,5 +83,11 @@ struct option const options[] = {
                 .flag = NULL,
                 .val = SKIP
         },
+        {
+                .name = "map-file",
+                .has_arg = required_argument,
+                .flag = NULL,
+                .val = MAP_FILE
+        },
         {0}
 };

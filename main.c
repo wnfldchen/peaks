@@ -22,6 +22,7 @@ int main(int argc, char ** argv) {
     FILE * variants_file = NULL;
     FILE * exclude_file = NULL;
     FILE * find_file = NULL;
+    FILE * map_file = NULL;
     uint8_t chromosome = (uint8_t) (-1);
     uint8_t table_1_mode = 0;
     uint8_t pad = 0;
@@ -110,6 +111,9 @@ int main(int argc, char ** argv) {
                 break;
             case SKIP:
                 skip = 1;
+                break;
+            case MAP_FILE:
+                // TODO
                 break;
             case '?':
                 fputs("Error parsing arguments\n", stderr);
