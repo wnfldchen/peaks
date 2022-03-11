@@ -174,6 +174,13 @@ int main(int argc, char ** argv) {
         fclose(exclude_file);
         parse_format_chr(exclude_format, pad ? '0' : '\0');
     }
+    struct format * map_format;
+    if (map_file) {
+        parse_format_string(&map_format, "cpd");
+        read_format_file(map_format, map_file, 0, " ");
+        fclose(map_file);
+        parse_format_chr(map_format, pad ? '0' : '\0');
+    }
     FILE * input_file = NULL;
     FILE * output_file = NULL;
     pid_t pid;
