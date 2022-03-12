@@ -152,3 +152,8 @@ Pad input chromosome field value `X` into `0X` before output.
 --skip
 ```
 Skip clustering stage
+
+```
+--map-file ../enhanced-map/12881_2010_748_MOESM1_ESM.csv
+```
+Use alternative genetic map
