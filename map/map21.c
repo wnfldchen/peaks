@@ -5,7 +5,7 @@
 
 struct map const map21 = {
     .n = 42972,
-    .position = (uint32_t const[])
+    .position = (uint32_t[])
 {
 10865933,
 10906723,
@@ -42980,7 +42980,7 @@ struct map const map21 = {
 48097610,
 48100155
 },
-    .comb_rate = (double const[])
+    .comb_rate = (double[])
 {
 0.6247366105,
 0.6231151531,
@@ -85955,7 +85955,7 @@ struct map const map21 = {
 3.0680031043,
 0
 },
-    .gen_map = (double const[])
+    .gen_map = (double[])
 {
 0,
 0.025416867094949,

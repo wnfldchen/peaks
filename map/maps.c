@@ -1,9 +1,59 @@
 // peaks. Copyright (c) 2020. Winfield Chen.
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <errno.h>
 #include "format.h"
 #include "map.h"
 #include "maps.h"
+
+struct map cust_maps[23];
+
+void destroy_cust_maps() {
+    for (uint8_t chr = 0; chr < 23; chr += 1) {
+        free(cust_maps[chr].position);
+        free(cust_maps[chr].gen_map);
+    }
+}
+
+void set_cust_maps(struct format const * const format) {
+    for (uint8_t chr = 0; chr < 23; chr += 1) {
+        uint32_t n = 0;
+        size_t const lines = format->r;
+        size_t start_idx = 0;
+        for (size_t line_idx = start_idx; line_idx < lines; line_idx += 1) {
+            if (get_format_chr(format, line_idx) == chr) {
+                if (n == 0) {
+                    start_idx = line_idx;
+                }
+                n += 1;
+            }
+        }
+        uint32_t * const position = calloc(n, sizeof(uint32_t));
+        if (!position) {
+            int errsv = errno;
+            perror("position");
+            exit(errsv);
+        }
+        double * const gen_map = calloc(n, sizeof(double));
+        if (!gen_map) {
+            int errsv = errno;
+            perror("gen_map");
+            exit(errsv);
+        }
+        for (size_t line_idx = start_idx; line_idx < start_idx + n; line_idx += 1) {
+            size_t i = line_idx - start_idx;
+            position[i] = *(uint32_t *)get_format_field(format, line_idx, POS);
+            gen_map[i] = *(double *)get_format_field(format, line_idx, GD);
+        }
+        cust_maps[chr] = (struct map){
+                .position = position,
+                .comb_rate = NULL,
+                .gen_map = gen_map,
+                .n = n
+        };
+    }
+}
 
 struct map const * get_map_p(uint8_t const i) {
     static struct map const * const maps[] = {
@@ -13,7 +63,7 @@ struct map const * get_map_p(uint8_t const i) {
         &map15, &map16, &map17, &map18, &map19,
         &map20, &map21, &map22
     };
-    return maps[i];
+    return cust_maps[i].n ? &cust_maps[i] : maps[i];
 }
 
 uint32_t binary_search(struct map const * const map, uint32_t const pos) {

@@ -174,12 +174,14 @@ int main(int argc, char ** argv) {
         fclose(exclude_file);
         parse_format_chr(exclude_format, pad ? '0' : '\0');
     }
-    struct format * map_format;
     if (map_file) {
+        struct format * map_format;
         parse_format_string(&map_format, "cpd");
-        read_format_file(map_format, map_file, 0, " ");
+        read_format_file(map_format, map_file, 0, ",");
         fclose(map_file);
         parse_format_chr(map_format, pad ? '0' : '\0');
+        set_cust_maps(map_format);
+        destroy_format(map_format);
     }
     FILE * input_file = NULL;
     FILE * output_file = NULL;
@@ -224,6 +226,9 @@ int main(int argc, char ** argv) {
     }
     if (pid && exclude_file) {
         destroy_format(exclude_format);
+    }
+    if (pid && map_file) {
+        destroy_cust_maps();
     }
     for (int i = 0; pid && i < max_procs; i += 1) {
         wait(NULL);
@@ -420,6 +425,9 @@ int main(int argc, char ** argv) {
     }
     if (variants_file) {
         destroy_format(variants_format);
+    }
+    if (map_file) {
+        destroy_cust_maps();
     }
     _exit(EXIT_SUCCESS);
 }

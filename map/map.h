@@ -4,10 +4,10 @@
 #define PEAKS_MAP_H
 #include <stdint.h>
 extern struct map {
-    uint32_t const * const position;
-    double const * const comb_rate;
-    double const * const gen_map;
-    uint32_t const n;
+    uint32_t * position;
+    double * comb_rate;
+    double * gen_map;
+    uint32_t n;
 } const
 map0X,
 map01,
