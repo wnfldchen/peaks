@@ -7,6 +7,7 @@
 #include "format.h"
 void destroy_cust_maps();
 void set_cust_maps(struct format const * format);
+void set_map_rotate();
 struct map const * get_map_p(uint8_t i);
 double get_gen_map_cm(struct map const * map, uint32_t pos);
 double get_gen_map_dist(struct map const * map, uint32_t a, uint32_t b);

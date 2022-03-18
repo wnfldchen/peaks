@@ -55,6 +55,12 @@ void set_cust_maps(struct format const * const format) {
     }
 }
 
+uint8_t map_rotate;
+
+void set_map_rotate() {
+    map_rotate = 1;
+}
+
 struct map const * get_map_p(uint8_t const i) {
     static struct map const * const maps[] = {
         &map0X, &map01, &map02, &map03, &map04,
