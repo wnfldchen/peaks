@@ -98,10 +98,9 @@ double get_gen_map_cm(struct map const * const map, uint32_t const pos) {
         uint32_t res_pos = pos - r_pos;
         uint32_t delta_pos = s_pos - r_pos;
         double delta_map = s_map - r_map;
-        return (res_pos * delta_map) / delta_pos + r_map;
-    } else {
-        return r_map;
+        r_map += (res_pos * delta_map) / delta_pos;
     }
+    return r_map;
 }
 
 double get_gen_map_dist(struct map const * const map, uint32_t const a, uint32_t const b) {
