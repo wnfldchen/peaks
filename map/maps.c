@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <math.h>
 #include "format.h"
 #include "map.h"
 #include "maps.h"
@@ -62,9 +61,10 @@ void set_map_rotate() {
     map_rotate = 1;
 }
 
-double rotate_gen_map_cm(struct map const * const map, double gen_map_cm) {
-    double total_cm = map->gen_map[map->n - 1];
-    return fmod(gen_map_cm + (total_cm / 2), total_cm);
+uint32_t rotate_gen_map_pos(struct map const * const map, uint32_t const pos) {
+    uint32_t start = map->position[0];
+    uint32_t end = map->position[map->n - 1];
+    return (pos + ((end - start) / 2)) % end;
 }
 
 struct map const * get_map_p(uint8_t const i) {
@@ -93,7 +93,10 @@ uint32_t binary_search(struct map const * const map, uint32_t const pos) {
     return r ? r - 1 : 0;
 }
 
-double get_gen_map_cm(struct map const * const map, uint32_t const pos) {
+double get_gen_map_cm(struct map const * const map, uint32_t pos) {
+    if (map_rotate) {
+        pos = rotate_gen_map_pos(map, pos);
+    }
     uint32_t r = binary_search(map, pos);
     uint32_t r_pos = map->position[r];
     double r_map = map->gen_map[r];
@@ -106,7 +109,7 @@ double get_gen_map_cm(struct map const * const map, uint32_t const pos) {
         double delta_map = s_map - r_map;
         r_map += (res_pos * delta_map) / delta_pos;
     }
-    return map_rotate ? rotate_gen_map_cm(map, r_map) : r_map;
+    return r_map;
 }
 
 double get_gen_map_dist(struct map const * const map, uint32_t const a, uint32_t const b) {
