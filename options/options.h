@@ -17,7 +17,8 @@ enum {
     FIND_REP,
     FIND_REV,
     SKIP,
-    MAP_FILE
+    MAP_FILE,
+    MAP_ROTATE
 };
 extern struct option const options[];
 #endif //PEAKS_OPTIONS_H

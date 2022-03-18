@@ -29,6 +29,7 @@ int main(int argc, char ** argv) {
     uint8_t find_rep = 0;
     uint8_t find_rev = 0;
     uint8_t skip = 0;
+    uint8_t map_rotate = 0;
     double min_p = 0.0;
     double min_maf = 0.0;
     int max_procs = 1;
@@ -119,6 +120,9 @@ int main(int argc, char ** argv) {
                     perror("--map-file");
                     return errsv;
                 }
+                break;
+            case MAP_ROTATE:
+                map_rotate = 1;
                 break;
             case '?':
                 fputs("Error parsing arguments\n", stderr);

@@ -89,5 +89,11 @@ struct option const options[] = {
                 .flag = NULL,
                 .val = MAP_FILE
         },
+        {
+                .name = "map-rotate",
+                .has_arg = no_argument,
+                .flag = NULL,
+                .val = MAP_ROTATE
+        },
         {0}
 };
