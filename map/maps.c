@@ -61,6 +61,10 @@ void set_map_rotate() {
     map_rotate = 1;
 }
 
+double rotate_gen_map_cm(struct map const * const map, double gen_map_cm) {
+    return gen_map_cm;
+}
+
 struct map const * get_map_p(uint8_t const i) {
     static struct map const * const maps[] = {
         &map0X, &map01, &map02, &map03, &map04,
@@ -100,7 +104,7 @@ double get_gen_map_cm(struct map const * const map, uint32_t const pos) {
         double delta_map = s_map - r_map;
         r_map += (res_pos * delta_map) / delta_pos;
     }
-    return r_map;
+    return map_rotate ? rotate_gen_map_cm(map, r_map) : r_map;
 }
 
 double get_gen_map_dist(struct map const * const map, uint32_t const a, uint32_t const b) {
