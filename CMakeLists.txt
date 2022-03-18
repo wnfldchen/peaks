@@ -49,3 +49,8 @@ target_include_directories(
         map
         options
 )
+
+target_link_libraries(
+        peaks
+        m
+)
