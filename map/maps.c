@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <math.h>
 #include "format.h"
 #include "map.h"
 #include "maps.h"
@@ -62,7 +63,8 @@ void set_map_rotate() {
 }
 
 double rotate_gen_map_cm(struct map const * const map, double gen_map_cm) {
-    return gen_map_cm;
+    double total_cm = map->gen_map[map->n - 1];
+    return fmod(gen_map_cm + (total_cm / 2), total_cm);
 }
 
 struct map const * get_map_p(uint8_t const i) {
