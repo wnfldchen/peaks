@@ -151,9 +151,14 @@ Pad input chromosome field value `X` into `0X` before output.
 ```
 --skip
 ```
-Skip clustering stage
+Skip clustering stage.
 
 ```
 --map-file ../enhanced-map/12881_2010_748_MOESM1_ESM.csv
 ```
-Use alternative genetic map
+Use alternative genetic map.
+
+```
+--map-rotate
+```
+Rotate genetic map centimorgan outputs by half the chromosome's total length with wrap-around for cluster sanity checking purposes.
