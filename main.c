@@ -29,6 +29,7 @@ int main(int argc, char ** argv) {
     uint8_t find_rep = 0;
     uint8_t find_rev = 0;
     uint8_t skip = 0;
+    uint8_t map_rotate = 0;
     double min_p = 0.0;
     double min_maf = 0.0;
     int max_procs = 1;
@@ -121,7 +122,7 @@ int main(int argc, char ** argv) {
                 }
                 break;
             case MAP_ROTATE:
-                set_map_rotate();
+                map_rotate = 1;
                 break;
             case '?':
                 fputs("Error parsing arguments\n", stderr);
@@ -185,6 +186,9 @@ int main(int argc, char ** argv) {
         parse_format_chr(map_format, pad ? '0' : '\0');
         set_cust_maps(map_format);
         destroy_format(map_format);
+    }
+    if (map_rotate) {
+        set_map_rotate();
     }
     FILE * input_file = NULL;
     FILE * output_file = NULL;
