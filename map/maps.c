@@ -7,6 +7,14 @@
 #include "map.h"
 #include "maps.h"
 
+uint8_t map_rotate;
+
+void set_map_rotate() {
+    map_rotate = 1;
+    // TODO
+    // Rotate default map
+}
+
 struct map cust_maps[23];
 
 void destroy_cust_maps() {
@@ -46,6 +54,10 @@ void set_cust_maps(struct format const * const format) {
             position[i] = *(uint32_t *)get_format_field(format, line_idx, POS);
             gen_map[i] = *(double *)get_format_field(format, line_idx, GD);
         }
+        if (map_rotate) {
+            // TODO
+            // Rotate custom map before saving
+        }
         cust_maps[chr] = (struct map){
                 .position = position,
                 .comb_rate = NULL,
@@ -53,12 +65,6 @@ void set_cust_maps(struct format const * const format) {
                 .n = n
         };
     }
-}
-
-uint8_t map_rotate;
-
-void set_map_rotate() {
-    map_rotate = 1;
 }
 
 struct map const * get_map_p(uint8_t const i) {
