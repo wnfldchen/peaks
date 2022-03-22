@@ -61,12 +61,6 @@ void set_map_rotate() {
     map_rotate = 1;
 }
 
-uint32_t rotate_gen_map_pos(struct map const * const map, uint32_t const pos) {
-    uint32_t start = map->position[0];
-    uint32_t end = map->position[map->n - 1];
-    return (pos + ((end - start) / 2)) % end;
-}
-
 struct map const * get_map_p(uint8_t const i) {
     static struct map const * const maps[] = {
         &map0X, &map01, &map02, &map03, &map04,
