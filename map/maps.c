@@ -93,10 +93,7 @@ uint32_t binary_search(struct map const * const map, uint32_t const pos) {
     return r ? r - 1 : 0;
 }
 
-double get_gen_map_cm(struct map const * const map, uint32_t pos) {
-    if (map_rotate) {
-        pos = rotate_gen_map_pos(map, pos);
-    }
+double get_gen_map_cm(struct map const * const map, uint32_t const pos) {
     uint32_t r = binary_search(map, pos);
     uint32_t r_pos = map->position[r];
     double r_map = map->gen_map[r];
