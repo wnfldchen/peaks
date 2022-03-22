@@ -97,6 +97,11 @@ void half_rotate(uint32_t * const a, size_t const n) {
     }
 }
 
+void sort_position(double * const gen_map, uint32_t * const position, size_t const n) {
+    // TODO
+    // Restore ascending order of position
+}
+
 void gen_map_rotate(double * const gen_map, uint32_t * const position, size_t const n) {
     finite_diff(gen_map, n);
     for (size_t i = 0; i < n - 1; i += 1) {
@@ -106,8 +111,7 @@ void gen_map_rotate(double * const gen_map, uint32_t * const position, size_t co
     for (size_t i = 0; i < n - 1; i += 1) {
         gen_map[i] *= position[i + 1] - position[i];
     }
-    // TODO
-    // Restore ascending order of position
+    sort_position(gen_map, position, n);
     finite_sum(gen_map, n);
 }
 
