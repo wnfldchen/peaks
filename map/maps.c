@@ -88,13 +88,17 @@ void finite_sum(double * const a, size_t const n) {
 }
 
 void half_rotate(uint32_t * const a, size_t const n) {
-
+    uint32_t const start = a[0];
+    uint32_t const end = a[n - 1];
+    uint32_t const l = end - start;
+    uint32_t const l_2 = l >> 1;
+    for (size_t i = 0; i < n; i += 1) {
+        a[i] = (((a[i] - start) + l_2) % l) + start;
+    }
 }
 
 void gen_map_rotate(double * const gen_map, uint32_t * const position, size_t const n) {
     finite_diff(gen_map, n);
-    // TODO
-    // Rotate map
     for (size_t i = 0; i < n - 1; i += 1) {
         gen_map[i] /= position[i + 1] - position[i];
     }
@@ -102,6 +106,8 @@ void gen_map_rotate(double * const gen_map, uint32_t * const position, size_t co
     for (size_t i = 0; i < n - 1; i += 1) {
         gen_map[i] *= position[i + 1] - position[i];
     }
+    // TODO
+    // Restore ascending order of position
     finite_sum(gen_map, n);
 }
 
