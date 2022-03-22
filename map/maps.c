@@ -87,17 +87,23 @@ void finite_sum(double * const a, size_t const n) {
     a[n - 1] = acc;
 }
 
-void gen_map_rotate(double * const a, size_t const n) {
-    finite_diff(a, n);
+void gen_map_rotate(double * const gen_map, uint32_t const * const position, size_t const n) {
+    finite_diff(gen_map, n);
     // TODO
     // Rotate map
-    finite_sum(a, n);
+    for (size_t i = 0; i < n - 1; i += 1) {
+        gen_map[i] /= position[i + 1] - position[i];
+    }
+    for (size_t i = 0; i < n - 1; i += 1) {
+        gen_map[i] *= position[i + 1] - position[i];
+    }
+    finite_sum(gen_map, n);
 }
 
 void set_map_rotate() {
     for (uint8_t chr = 0; chr < 23; chr += 1) {
         struct map const * const map_p = get_map_p(chr);
-        gen_map_rotate(map_p->gen_map, map_p->n);
+        gen_map_rotate(map_p->gen_map, map_p->position, map_p->n);
     }
 }
 
