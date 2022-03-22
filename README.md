@@ -161,4 +161,4 @@ Use alternative genetic map.
 ```
 --map-rotate
 ```
-Rotate genetic map centimorgan outputs by half the chromosome's total length with wrap-around for cluster sanity checking purposes.
+Rotate genetic map linkages by half a chromosome for cluster sanity checking purposes.
