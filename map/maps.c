@@ -114,10 +114,12 @@ void sort_position(double * const gen_map, uint32_t * const position, size_t con
         perror("tmp_map");
         exit(errsv);
     }
-    memcpy(&tmp_pos[0], &position[i + 1], (n - i - 1) * sizeof(uint32_t));
-    memcpy(&tmp_pos[n - i - 1], &position[0], (i + 1) * sizeof(uint32_t));
-    memcpy(&tmp_map[0], &gen_map[i + 1], (n - i - 1) * sizeof(double));
-    memcpy(&tmp_map[n - i - 1], &gen_map[0], (i + 1) * sizeof(double));
+    size_t const n_l = i + 1;
+    size_t const n_r = n - i - 1;
+    memcpy(&tmp_pos[0], &position[n_l], n_r * sizeof(uint32_t));
+    memcpy(&tmp_pos[n_r], &position[0], n_l * sizeof(uint32_t));
+    memcpy(&tmp_map[0], &gen_map[n_l], n_r * sizeof(double));
+    memcpy(&tmp_map[n_r], &gen_map[0], n_l * sizeof(double));
     memcpy(position, tmp_pos, n * sizeof(uint32_t));
     memcpy(gen_map, tmp_map, n * sizeof(double));
     free(tmp_pos);
