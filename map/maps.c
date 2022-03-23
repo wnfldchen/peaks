@@ -132,10 +132,10 @@ void gen_map_rotate(double * const gen_map, uint32_t * const position, size_t co
         gen_map[i] /= position[i + 1] - position[i];
     }
     half_rotate(position, n);
+    sort_position(gen_map, position, n);
     for (size_t i = 0; i < n - 1; i += 1) {
         gen_map[i] *= position[i + 1] - position[i];
     }
-    sort_position(gen_map, position, n);
     finite_sum(gen_map, n);
 }
 
