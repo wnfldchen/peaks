@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <string.h>
 #include "format.h"
 #include "map.h"
 #include "maps.h"
@@ -98,8 +99,29 @@ void half_rotate(uint32_t * const a, size_t const n) {
 }
 
 void sort_position(double * const gen_map, uint32_t * const position, size_t const n) {
-    // TODO
-    // Restore ascending order of position
+    size_t i = 0;
+    for (; i < n - 1 && position[i] <= position[i + 1]; i += 1) {
+    }
+    uint32_t * const tmp_pos = calloc(n, sizeof(uint32_t));
+    if (!tmp_pos) {
+        int errsv = errno;
+        perror("tmp_pos");
+        exit(errsv);
+    }
+    double * const tmp_map = calloc(n, sizeof(double));
+    if (!tmp_map) {
+        int errsv = errno;
+        perror("tmp_map");
+        exit(errsv);
+    }
+    memcpy(&tmp_pos[0], &position[i + 1], (n - i - 1) * sizeof(uint32_t));
+    memcpy(&tmp_pos[n - i - 1], &position[0], (i + 1) * sizeof(uint32_t));
+    memcpy(&tmp_map[0], &gen_map[i + 1], (n - i - 1) * sizeof(double));
+    memcpy(&tmp_map[n - i - 1], &gen_map[0], (i + 1) * sizeof(double));
+    memcpy(position, tmp_pos, n * sizeof(uint32_t));
+    memcpy(gen_map, tmp_map, n * sizeof(double));
+    free(tmp_pos);
+    free(tmp_map);
 }
 
 void gen_map_rotate(double * const gen_map, uint32_t * const position, size_t const n) {
